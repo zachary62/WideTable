@@ -1,7 +1,7 @@
 from enum import Enum
 
 # TODO: make aggregator class (like operator in database), so we can do simple composition and optimization
-Aggregator = Enum('Aggregator', 'SUM MAX MIN SUB SUM_PROD SUM_SUM_PROD PROD DIV COUNT DISTINCT_COUNT IDENTITY')
+Aggregator = Enum('Aggregator', 'SUM MAX MIN SUB SUM_PROD DISTRIBUTED_SUM_PROD PROD DIV COUNT DISTINCT_COUNT IDENTITY')
 Annotation = Enum('NULL', 'NULL NOT_NULL NOT_GREATER GREATER DISTINCT NOT_DISTINCT IN NOT_IN')
 Message = Enum('Message', 'IDENTITY SELECTION FULL UNDECIDED')
 
@@ -10,8 +10,7 @@ def parse_agg(agg, para):
     if agg == Aggregator.SUM:
         assert isinstance(para, str)
         return 'SUM(' + para + ')'
-    elif agg == Aggregator.SUM_SUM_PROD:
-        # TODO: find a better name than SUM_SUM_PROD
+    elif agg == Aggregator.DISTRIBUTED_SUM_PROD:
         assert isinstance(para, dict)
         # para structure: {sum_column => list of annotated columns in other relations}
         # example para: {R1.s => [R2.c, R3.c], R2.s => [R1.c, R3.c], R3.s => [R1.c, R2.c]}

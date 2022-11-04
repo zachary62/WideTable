@@ -62,7 +62,7 @@ class varSemiRing(SemiRing):
         for i, relation in enumerate(relations):
             sum_join_calculation[f'"{str(relation)}"."{s}"'] = [f'"{rel}"."{c}"' for rel in (relations[:i] + relations[i+1:])]
 
-        return {s_after: (sum_join_calculation, Aggregator.SUM_SUM_PROD), c_after: (annotated_count, Aggregator.SUM_PROD)}
+        return {s_after: (sum_join_calculation, Aggregator.DISTRIBUTED_SUM_PROD), c_after: (annotated_count, Aggregator.SUM_PROD)}
 
     def get_value(self):
         return self.r_pair
