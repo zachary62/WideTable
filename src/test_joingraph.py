@@ -1,15 +1,7 @@
 import unittest
-import math
-import time
 import pandas as pd
-import duckdb
-import lightgbm
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.metrics import mean_squared_error
-from joinboost.executor import DuckdbExecutor, ExecutorException
 from joinboost.joingraph import JoinGraph, JoinGraphException
-from joinboost.app import DecisionTree,GradientBoosting,RandomForest
+
 
 class TestJoingraph(unittest.TestCase):
         
@@ -24,7 +16,7 @@ class TestJoingraph(unittest.TestCase):
             raise JoinGraphException('Attribute not in the relation but is allowed!')
         except:
             pass
-        dataset.add_relation('R', ['B', 'A'], y='B', relation_address=R)
+        dataset.add_relation('R', ['B', 'A'], relation_address=R)
         dataset.add_relation('S', ['B', 'C'], relation_address=S)
         dataset.add_relation('T', ['A', 'C'], relation_address=T)
         

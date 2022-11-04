@@ -1,7 +1,6 @@
 import copy
 from .semiring import SemiRing
 from .joingraph import JoinGraph
-from .executor import Executor
 from .aggregator import *
 
 
@@ -19,7 +18,6 @@ class CJT(JoinGraph):
                          join_graph.target_relation)
         # CJT get the join structure from this
         self.annotations = annotations
-
 
     def get_message(self, from_table: str, to_table: str):
         return self.joins[from_table][to_table]['message']
@@ -63,11 +61,11 @@ class CJT(JoinGraph):
                                     self.get_message(table, self.target_relation))
         return neighbors
     
-    def calibration(self, rooto_table: str = None):
-        if not rooto_table:
-            rooto_table = self.target_relation
-        self.upward_message_passing(rooto_table, m_type = Message.IDENTITY)
-        self.downward_message_passing(rooto_table, m_type = Message.FULL)
+    def calibration(self, root_table: str = None):
+        if not root_table:
+            root_table = self.target_relation
+        self.upward_message_passing(root_table, m_type=Message.FULL)
+        self.downward_message_passing(root_table, m_type=Message.FULL)
 
     def downward_message_passing(self, 
                                  rooto_table: str = None, 
@@ -79,11 +77,12 @@ class CJT(JoinGraph):
         return msgs
     
     # TODO: this is not working if upward_message_passing from non-fact table
-    def upward_message_passing(self, rooto_table: str = None, 
+    #  Above TODO needs to be rechecked
+    def upward_message_passing(self, root_table: str = None,
                                m_type: Message = Message.UNDECIDED):
-        if not rooto_table:
-            rooto_table = self.target_relation
-        self._post_dfs(rooto_table, m_type=m_type)
+        if not root_table:
+            root_table = self.target_relation
+        self._post_dfs(root_table, m_type=m_type)
 
     def _post_dfs(self, currento_table: str, 
                   parent_table: str = None, 
@@ -111,20 +110,20 @@ class CJT(JoinGraph):
                 self._pre_dfs(c_neighbor, currento_table, m_type=m_type)
 
     def absorption(self, table: str, group_by: list, mode=4):
-        from_table_attrs = self.get_relation_features(table)
+        # from_table_attrs = self.get_relation_features(table)
         incoming_messages, join_conds = self._get_income_messages(table)
-        
-        aggregate_expressions = self.semi_ring.col_sum()
+
+        from_relations = [m['message'] for m in incoming_messages] + [table]
+        aggregate_expressions = self.semi_ring.col_product_sum(from_relations)
         for attr in group_by:
             aggregate_expressions[attr] = (table + "." + attr, Aggregator.IDENTITY)
-        
+
         return self.exe.execute_spja_query(aggregate_expressions, 
-                                           from_tables=[m['message'] for m in incoming_messages]+[table], 
+                                           from_tables=from_relations,
                                            select_conds=join_conds+self.get_parsed_annotations(table),
                                            group_by=[table + '.' + attr for attr in group_by], 
                                            mode=mode)
 
-    
     # get the incoming message from one table to another
     # key function for message passing, Sec 3.3 of CJT paper
     # allow two types of join condition: 1 is for selection, 2 is for semi-join
@@ -136,7 +135,9 @@ class CJT(JoinGraph):
         for neighbour_table in self.joins[table]:
             # if neighbour_table != excluded_table:
             incoming_message = self.joins[neighbour_table][table]
-            if incoming_message['message_type'] == Message.IDENTITY:
+            if 'message_type' not in incoming_message:
+                continue
+            if 'message_type' in incoming_message and incoming_message['message_type'] == Message.IDENTITY:
                 continue
             
             # semijoin optimization
@@ -161,10 +162,9 @@ class CJT(JoinGraph):
                                + ') FROM ' + incoming_message["message"] + ')']
         return incoming_messages, join_conds
 
-
     # 3 message types: identity, selection, FULL
     def _send_message(self, from_table: str, to_table: str, m_type: Message = Message.UNDECIDED):
-    # print('--Sending Message from', from_table, 'to', to_table, 'm_type is', m_type)
+        print('--Sending Message from', from_table, 'to', to_table, 'm_type is', m_type)
         # identity message optimization
         if m_type == Message.IDENTITY:
             self.joins[from_table][to_table].update({'message_type': m_type,})
@@ -176,41 +176,44 @@ class CJT(JoinGraph):
         # join with incoming messages
         incoming_messages, join_conds = self._get_income_messages(from_table, to_table)
         
-        # assume fact table. Relax it for many-to-many!!
         if m_type == Message.UNDECIDED:
-            if from_table == self.target_relation:
-                m_type = Message.FULL
-            else:
-                m_type = Message.SELECTION
-                for message_type in [m['message_type'] for m in incoming_messages]:
-                    if message_type == Message.FULL:
-                        m_type = Message.FULL
+            m_type = Message.FULL
+            # if from_table == self.target_relation:
+            #     m_type = Message.FULL
+            # else:
+            #     m_type = Message.SELECTION
+            #     for message_type in [m['message_type'] for m in incoming_messages]:
+            #         if message_type == Message.FULL:
+            #             m_type = Message.FULL
 
         # get the group_by key for this message
         l_join_keys, _ = self.get_join_keys(from_table, to_table)
-        
+        from_relations = [m['message'] for m in incoming_messages] + [from_table]
         # compute aggregation
-        aggregation = (self.semi_ring.col_sum() if m_type == Message.FULL else {})
+        aggregation = (self.semi_ring.col_product_sum(relations=from_relations) if m_type == Message.FULL else {})
         for attr in l_join_keys:
             aggregation[attr] = (from_table + "." + attr, Aggregator.IDENTITY)
             
         message_name = self.exe.execute_spja_query(aggregation, 
-                                                    from_tables=[m['message'] for m in incoming_messages]+[from_table], 
+                                                    from_tables=from_relations,
                                                     select_conds=join_conds+self.get_parsed_annotations(from_table),
                                                     group_by=[from_table + '.' + attr for attr in l_join_keys], 
                                                     mode=1)
 
         self.joins[from_table][to_table].update({'message': message_name, 'message_type': m_type})
     
-    # by default, lift the target variale
-    def lift(self, var = None):
-        if var is None:
-            var = self.target_var
-        lift_exp = self.semi_ring.lift_exp(var)
-        # copy the rest attributes
-        for attr in self.get_useful_attributes(self.target_relation):
+    # by default, lift the target attribute
+    # Essentially, this method renames the relevant attributes
+    def lift(self, relation=None, attr=None):
+        if relation is None:
+            relation = self.target_relation
+        if attr is None:
+            attr = self.target_var
+        lift_exp = self.semi_ring.lift_exp(relation + '.' + attr)
+        # copy the remaining attributes as they are (no aggregation)
+        for attr in self.get_useful_attributes(relation):
             lift_exp[attr] = (attr, Aggregator.IDENTITY)
         new_fact_name = self.exe.execute_spja_query(lift_exp,
-                                                    [self.target_relation],
-                                                    mode = 1)
-        self.replace(self.target_relation, new_fact_name)
+                                                    [relation],
+                                                    mode=1)
+        self.replace(relation, new_fact_name)

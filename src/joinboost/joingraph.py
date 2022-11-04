@@ -18,7 +18,7 @@ class JoinGraph:
                 target_relation = None):
         
         self.exe = ExecutorFactory(exe)
-        # maps each from_relation => to_relation => {keys: (from_keys, to_keys)}
+        # maps each from_relation => to_relation => {keys: (from_keys, to_keys), message_type: "", message: name}
         self.joins = copy.deepcopy(joins)
         # maps each relation => feature => feature_type
         self.relation_schema = copy.deepcopy(relation_schema)
@@ -42,7 +42,12 @@ class JoinGraph:
 
     def get_target_relation(self): 
         return self.target_relation
-    
+
+    # set target/root relation. This corresponds to the
+    # root of the join graph for calibration.
+    def set_root_relation(self, root_relation):
+        self.target_relation = root_relation
+
     def get_joins(self):
         return self.joins
     
@@ -67,35 +72,21 @@ class JoinGraph:
         if len(seen) != len(self.joins):
             raise JoinGraphException("The join graph is disjoint!")
     
-    # add relation, features and target variable to join graph
-    # current assumption: Y is in the fact table
+    # add relation, attributes and target variable to join graph
     def add_relation(self,
-                     relation: str, 
-                     X: list = [], 
-                     y: str = None, 
-                     categorical_feature: list = [],
+                     relation: str,
+                     attrs: list = [],
                      relation_address = None):
         
         self.exe.add_table(relation, relation_address)
+        self.exe.add_default_annotated_columns(relation)
         self.joins[relation] = dict()
         if relation not in self.relation_schema:
-                self.relation_schema[relation] = {}
-        
-        self.check_features_exist(relation, X + ([y] if y is not None else []))
-        
-        for x in X:
-            # by default, assume all features to be numerical
-            self.relation_schema[relation][x] = "NUM"
-            
-        for x in categorical_feature:
-            self.relation_schema[relation][x] = "LCAT"
-            
-        if y is not None:
-            if self.target_var is not None:
-                print("Warning: Y already exists and has been replaced")
-            self.target_var = y
-            self.target_relation = relation
-            
+            self.relation_schema[relation] = {}
+
+        for x in attrs:
+            self.relation_schema[relation][x] = ""
+
     # get features for each table
     def get_relation_features(self, r_name):
         if r_name not in self.relation_schema:
@@ -119,10 +110,11 @@ class JoinGraph:
                 keys = keys.union(set(l_keys))
             return list(keys)
     
-    # useful attributes are features + join keys
+    # useful attributes are join keys
     def get_useful_attributes(self, table):
-        useful_attributes = self.get_relation_features(table) + \
-                            self.get_join_keys(table)
+        # useful_attributes = self.get_relation_features(table) + \
+        #                     self.get_join_keys(table)
+        useful_attributes = self.get_join_keys(table)
         return list(set(useful_attributes))
     
 

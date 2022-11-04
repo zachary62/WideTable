@@ -46,11 +46,23 @@ class varSemiRing(SemiRing):
         s, c = semi_ring.get_value()
         self.r_pair = (self.r_pair[0] * c + self.r_pair[1] * s, c * self.r_pair[1])
 
-    def lift_exp(self, s = 's', c = '1', s_after = 's', c_after = 'c'):
+    def lift_exp(self, s='s', c='1', s_after='s', c_after='c'):
         return {s_after: (s, Aggregator.IDENTITY), c_after: (c, Aggregator.IDENTITY)}
 
-    def col_sum(self, s = 's', c = 'c', s_after = 's', c_after = 'c'):
+    def col_sum(self, s='s', c='c', s_after='s', c_after='c'):
         return {s_after: (s, Aggregator.SUM), c_after: (c, Aggregator.SUM)}
+
+    def col_product_sum(self, relations=[], s='s', c='c', s_after='s', c_after='c'):
+
+        annotated_count = {}
+        for i, relation in enumerate(relations):
+            annotated_count[f'"{relation}"'] = f'"{c}"'
+
+        sum_join_calculation = {}
+        for i, relation in enumerate(relations):
+            sum_join_calculation[f'"{str(relation)}"."{s}"'] = [f'"{rel}"."{c}"' for rel in (relations[:i] + relations[i+1:])]
+
+        return {s_after: (sum_join_calculation, Aggregator.DISTRIBUTED_SUM_PROD), c_after: (annotated_count, Aggregator.SUM_PROD)}
 
     def get_value(self):
         return self.r_pair
