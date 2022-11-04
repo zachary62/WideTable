@@ -18,7 +18,7 @@ def ExecutorFactory(con=None):
     elif issubclass(type(con), Executor):
         return con
     elif type(con).__name__ == 'DuckDBPyConnection':
-        return DuckdbExecutor(con)
+        return DuckdbExecutor(con, debug=True)
     else:
         raise ExecutorException("Unknown connector with type " + type(con).__name__)
         
@@ -42,6 +42,9 @@ class Executor(ABC):
         pass
     
     def add_table(self, table: str, table_address):
+        pass
+
+    def add_default_annotated_columns(self, table: str):
         pass
     
     def delete_table(self, table: str):
@@ -93,7 +96,21 @@ class DuckdbExecutor(Executor):
             cond += 'ELSE 0 END\n'
             conds.append(cond)
         return conds
-    
+
+    def add_table(self, table: str, table_address):
+        if table_address is None:
+            raise ExecutorException("Please pass in the csv file location")
+        self.conn.execute(f"CREATE TABLE {table} AS SELECT * FROM '{table_address}'")
+
+    # adds default annotation columns to make CJT implementation easier
+    # s (sum) column with value 0
+    # c (count) column with value 1
+    def add_default_annotated_columns(self, table: str):
+        self.conn.execute(f"ALTER TABLE {table} ADD COLUMN s integer")
+        self.conn.execute(f"UPDATE {table} SET s=0")
+        self.conn.execute(f"ALTER TABLE {table} ADD COLUMN c integer")
+        self.conn.execute(f"UPDATE {table} SET c=1")
+
     def delete_table(self, table: str):
         self.check_table(table)
         sql = 'DROP TABLE IF EXISTS ' + table + ';\n'
@@ -168,7 +185,7 @@ class DuckdbExecutor(Executor):
         
         spja = self.spja_query(aggregate_expressions=aggregate_expressions,
                                from_tables=from_tables,
-                               select_conds = select_conds,
+                               select_conds=select_conds,
                                group_by=group_by, 
                                window_by=window_by,
                                order_by=order_by,
@@ -258,8 +275,11 @@ class DuckdbExecutor(Executor):
             print(e)
         return result
 
+
 class PandasExecutor(DuckdbExecutor):
     def add_table(self, table: str, table_address):
         if table_address is None:
             raise ExecutorException("Please pass in the pandas dataframe!")
         self.conn.register(table, table_address)
+    def add_default_annotated_columns(self, table: str):
+        pass

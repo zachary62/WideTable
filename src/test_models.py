@@ -167,7 +167,7 @@ class TestModel(unittest.TestCase):
         exe = DuckdbExecutor(con, debug=False)
 
         dataset = JoinGraph(exe=exe)
-        dataset.add_relation('R', categorical_feature=['D'], y = 'H')
+        dataset.add_relation('R', y = 'H')
 
         iteration = 1
         depth = 1
