@@ -13,9 +13,7 @@ class CJT(JoinGraph):
         self.semi_ring = semi_ring
         super().__init__(join_graph.exe,
                          join_graph.joins, 
-                         join_graph.relation_schema,
-                         join_graph.target_var,
-                         join_graph.target_relation)
+                         join_graph.relation_schema)
         
         # maps relation to a set of annotations
         self.annotations = annotations
@@ -49,14 +47,13 @@ class CJT(JoinGraph):
         pass
     
     # TODO: check relation to leave is a leaf node in the join graph.
-    def remove_table(self, relation):
+    def remove_relation(self, relation):
         pass
     
-    # TODO: check relation_join_with_the_new_reltion is a leaf node.
-    # if it is, add the new_relation to join graph
+    # TODO: add the new_relation to join graph.
     # invalidate messages from relation_join_with_the_new_reltion
     # Of course better variable names
-    def add_table(self, new_relation, relation_join_with_the_new_reltion, join_keys):
+    def add_relation(self, new_relation, relation_join_with_the_new_reltion, join_keys):
         pass
     
     # TODO: use "invalidate_message" function to remove message
@@ -223,6 +220,7 @@ class CJT(JoinGraph):
             attr = self.target_var
         lift_exp = self.semi_ring.lift_exp(relation + '.' + attr)
         # copy the remaining attributes as they are (no aggregation)
+        # TODO: include all attributes. We may place selection on these attributes
         for attr in self.get_useful_attributes(relation):
             lift_exp[attr] = (attr, Aggregator.IDENTITY)
         new_fact_name = self.exe.execute_spja_query(lift_exp,

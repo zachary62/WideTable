@@ -13,17 +13,13 @@ class JoinGraph:
     def __init__(self, 
                 exe = None, 
                 joins = {}, 
-                relation_schema = {},
-                target_var = None,
-                target_relation = None):
+                relation_schema = {}):
         
         self.exe = ExecutorFactory(exe)
         # maps each from_relation => to_relation => {keys: (from_keys, to_keys), message_type: "", message: name}
         self.joins = copy.deepcopy(joins)
         # maps each relation => feature => feature_type
         self.relation_schema = copy.deepcopy(relation_schema)
-        self.target_var = target_var
-        self.target_relation = target_relation
         # some magic/random number used for jupyter notebook display
         self.session_id = int(time.time())
         self.rep_template = data = pkgutil.get_data(__name__, "d3graph.html").decode('utf-8')
@@ -37,14 +33,9 @@ class JoinGraph:
     def get_type(self, relation, feature): 
         return self.relation_schema[relation][feature]
 
-    def get_target_var(self): 
-        return self.target_var
-
-    def get_target_relation(self): 
-        return self.target_relation
-
     # set target/root relation. This corresponds to the
     # root of the join graph for calibration.
+    # TODO: remove it
     def set_root_relation(self, root_relation):
         self.target_relation = root_relation
 
@@ -201,31 +192,3 @@ class JoinGraph:
         s = s.replace("{{nodes}}", str(nodes))
         s = s.replace("{{links}}", str(links))
         return s
-
-#     def decide_feature_type(self, table, attrs, attr_types, threshold, exe: Executor):
-#         self.relations.append(table)
-#         r_meta = {}
-#         for i, attr in enumerate(attrs):
-#             if attr_types[i] == 2:
-#                 r_meta[attr] = 'NUM'
-#             else:
-#                 r_meta[attr] = 'CAT'
-#                 view = exe.execute_spja_query(aggregate_expressions={attr: (attr, Aggregator.DISTINCT_COUNT)},
-#                                               f_table=table)
-#                 res = exe.select_all(view)
-#                 if res[0][0] <= threshold:
-#                     r_meta[attr] = 'LCAT'
-#         self.meta_data[table] = r_meta
-#         self.r_attrs[table] = list(r_meta.keys())
-
-# TODO: Check fact table and missing join keys
-# auto dictionary encoding
-# naming could conflict with semi-ring
-# for prediction, what if two attributes have the same name?
-# semi-join reduction for message to pass to
-# todo: remove s,c logic from app
-# infer executor from class
-# app -> models
-# support classification
-# support predict based on fact table
-# benchmark predict performance
