@@ -56,6 +56,8 @@ def is_agg(agg):
         return True
     return False
 
+# Zach: I know prepend_relation is something I did, but I didn't remember why I need it
+# check if it is necessary and maybe we can remove it
 def parse_ann(annotations: dict, prepend_relation=False):
     select_conds = []
     for r_name, annotations in annotations.items():

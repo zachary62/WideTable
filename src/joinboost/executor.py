@@ -34,45 +34,6 @@ class Executor(ABC):
         name = self.prefix + str(self.view_id)
         self.view_id += 1
         return name
-    
-    def get_schema(self, table):
-        pass
-    
-    def select_all(self, table):
-        pass
-    
-    def add_table(self, table: str, table_address):
-        pass
-
-    def add_default_annotated_columns(self, table: str):
-        pass
-    
-    def delete_table(self, table: str):
-        pass
-
-    def load_table(self, table_name: str, data_dir: str):
-        pass
-
-    def case_query(self, from_table: str, operator: str, cond_attr: str, base_val: str,
-                   case_definitions: list, select_attrs: list = [], table_name: str = None):
-        pass
-
-    def window_query(self, view: str, select_attrs: list, base_attr: str, cumulative_attrs: list):
-        pass
-
-    def execute_spja_query(self,
-                           mode: int,
-                           aggregate_expressions: dict,
-                           in_msgs: list = [],
-                           from_table: str = '',
-                           group_by: list = [],
-                           where_conds: dict = {},
-                           annotations: list = [],
-                           left_join: dict = {},
-                           table_name: str = '',
-                           replace: bool = True) -> str:
-        pass
-
 
 
 class DuckdbExecutor(Executor):
@@ -86,16 +47,6 @@ class DuckdbExecutor(Executor):
         table_info = self._execute_query('PRAGMA table_info(' + table + ')')
         return [x[1] for x in table_info]
         
-    def _gen_sql_case(self, leaf_conds: list):
-        conds = []
-        for leaf_cond in leaf_conds:
-            cond = 'CASE\n'
-            for (pred, annotations) in leaf_cond:
-                cond += ' WHEN ' + ' AND '.join(annotations) + \
-                        ' THEN CAST(' + str(pred) + ' AS DOUBLE)\n'
-            cond += 'ELSE 0 END\n'
-            conds.append(cond)
-        return conds
 
     def add_table(self, table: str, table_address):
         if table_address is None:
@@ -115,43 +66,7 @@ class DuckdbExecutor(Executor):
         self.check_table(table)
         sql = 'DROP TABLE IF EXISTS ' + table + ';\n'
         self._execute_query(sql)
-        
-    # TODO: remove it
-    def window_query(self, view: str, select_attrs: list, base_attr: str, cumulative_attrs: list):
-        view_name = self.get_next_name()
-        sql = 'CREATE OR REPLACE VIEW ' + view_name + ' AS SELECT * FROM\n'
-        sql += '(\nSELECT ' + ",".join(select_attrs)
-        for attr in cumulative_attrs:
-            sql += ',SUM(' + attr + ') OVER joinboost_window as ' + attr
-        sql += '\nFROM ' + view
-        sql += ' WINDOW joinboost_window AS (ORDER BY ' + base_attr + ')\n)'
-        self._execute_query(sql)
-        return view_name
 
-    # {case: value} operator {case: value} ...
-    def case_query(self, from_table: str, operator: str, cond_attr: str, base_val: str,
-                   case_definitions: list, select_attrs: list = [], table_name: str = None):
-        # print(conditions)
-        if not select_attrs:
-            attrs = self._execute_query('PRAGMA table_info(' + from_table + ')')
-            for attr in attrs:
-                if attr != cond_attr: select_attrs.append(attr[1])
-        if not table_name:
-            view = self.get_next_name()
-        else:
-            view = table_name
-        sql = 'CREATE OR REPLACE TABLE ' + view + ' AS\n'
-        sql += 'SELECT ' + ','.join(select_attrs) + ','
-        sql += base_val
-        for case_definition in case_definitions:
-            sql += operator + '\nCASE\n'
-            for val, cond in case_definition:
-                sql += ' WHEN ' + ' AND '.join(cond) + ' THEN CAST(' + str(val) + ' AS DOUBLE)\n'
-            sql += 'ELSE 0 END\n'
-        sql += 'AS ' + cond_attr + ' FROM ' + from_table
-        self._execute_query(sql)
-        return view
-    
     def check_table(self, table):
         if not table.startswith(self.prefix):
             raise Exception("Don't modify user tables!")

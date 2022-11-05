@@ -16,9 +16,11 @@ class CJT(JoinGraph):
                          join_graph.relation_schema,
                          join_graph.target_var,
                          join_graph.target_relation)
-        # CJT get the join structure from this
+        
+        # maps relation to a set of annotations
         self.annotations = annotations
-
+    
+    # given the from_table and to_table, return the message in between
     def get_message(self, from_table: str, to_table: str):
         return self.joins[from_table][to_table]['message']
 
@@ -28,14 +30,36 @@ class CJT(JoinGraph):
         return parse_ann({table: self.annotations[table]})
 
     def get_all_parsed_annotations(self):
+        # zach: I don't remember why the "True" for prepend. maybe we can remove it
         return parse_ann(self.annotations, True)
 
-    def add_annotations(self, r_name: str, annotation: str):
+    def add_annotations(self, r_name: str, annotation: str, lazy=True):
+        # TODO: add some check for annotation. E.g., is the referenced attribute even in the relation?
         if r_name not in self.annotations:
             self.annotations[r_name] = [annotation]
         else:
             self.annotations[r_name].append(annotation)
+        # TODO: after add annotation, all messages from this relation are invalidated. 
+        # if lazy is false, invalivate messages
 
+    # TODO: this function takes the from_table, to_table,
+    # and remove the message (delete table + remove it from the self.joins)
+    # if lazy, don't delete table in databases
+    def invalidate_message(self, from_table, to_table, lazy):
+        pass
+    
+    # TODO: check relation to leave is a leaf node in the join graph.
+    def remove_table(self, relation):
+        pass
+    
+    # TODO: check relation_join_with_the_new_reltion is a leaf node.
+    # if it is, add the new_relation to join graph
+    # invalidate messages from relation_join_with_the_new_reltion
+    # Of course better variable names
+    def add_table(self, new_relation, relation_join_with_the_new_reltion, join_keys):
+        pass
+    
+    # TODO: use "invalidate_message" function to remove message
     def clean_message(self):
         for from_table in self.joins:
             for to_table in self.joins[from_table]:
@@ -45,7 +69,9 @@ class CJT(JoinGraph):
 
     def get_semi_ring(self): 
         return self.semi_ring
-
+    
+    # this is for "what-if query"
+    # copy a new cjt so the old are kept
     def copy_cjt(self, semi_ring: SemiRing):
         annotations = copy.deepcopy(self.annotations)
         c_cjt = CJT(semi_ring=semi_ring, 
@@ -54,19 +80,23 @@ class CJT(JoinGraph):
         return c_cjt
 
     def get_root_neighbors(self):
-        joins, neighbors = self.get_joins(), {}
-        for table in joins[self.target_relation]:
+        neighbors = {}
+        for table in self.joins[self.target_relation]:
             if self.joins[table][self.target_relation]['message_type'] != Message.IDENTITY:
                 neighbors[table] = (self.get_join_keys(self.target_relation, table),
                                     self.get_message(table, self.target_relation))
         return neighbors
     
     def calibration(self, root_table: str = None):
+        # TODO: choose the first relation in the joins
         if not root_table:
+            # currently below doesn't pass test. check why
+            # root_table = list(self.joins.keys())[0]
             root_table = self.target_relation
         self.upward_message_passing(root_table, m_type=Message.FULL)
         self.downward_message_passing(root_table, m_type=Message.FULL)
-
+        
+    # TODO: for both upward and downward message passing, check if it current exist, and skip if yes.
     def downward_message_passing(self, 
                                  rooto_table: str = None, 
                                  m_type: Message = Message.UNDECIDED):
@@ -129,8 +159,7 @@ class CJT(JoinGraph):
     # allow two types of join condition: 1 is for selection, 2 is for semi-join
     def _get_income_messages(self, 
                              table: str, 
-                             excluded_table: str = '', 
-                             condition=1, semi_join_opt=True):
+                             excluded_table: str = ''):
         incoming_messages, join_conds = [], []
         for neighbour_table in self.joins[table]:
             # if neighbour_table != excluded_table:
@@ -139,31 +168,18 @@ class CJT(JoinGraph):
                 continue
             if 'message_type' in incoming_message and incoming_message['message_type'] == Message.IDENTITY:
                 continue
-            
-            # semijoin optimization
-            # Naively, the table is excluded
-            # but we can use its message for semi-join to accelerate message passing
-            if excluded_table == neighbour_table:
-                if semi_join_opt:
-                    incoming_message = copy.deepcopy(incoming_message)
-                    incoming_message['message_type'] = Message.SELECTION
-                else:
-                    continue
 
             # get the join conditions between from_table and incoming_message
             l_join_keys, r_join_keys = self.get_join_keys(neighbour_table, table)
             incoming_messages.append(incoming_message)
-            if condition == 1:
-                join_conds += [incoming_message["message"] + "." + l_join_keys[i] + " IS NOT DISTINCT FROM " +
-                               table + "." + r_join_keys[i] for i in range(len(l_join_keys))]
-            if condition == 2:
-                join_conds += ['(' + ','.join([table + '.' + key for key in r_join_keys]) + ') in (SELECT (' 
-                               + ','.join([incoming_message["message"] + '.' + key for key in l_join_keys]) 
-                               + ') FROM ' + incoming_message["message"] + ')']
+            
+            join_conds += [incoming_message["message"] + "." + l_join_keys[i] + " IS NOT DISTINCT FROM " +
+                           table + "." + r_join_keys[i] for i in range(len(l_join_keys))]
+                
         return incoming_messages, join_conds
 
     # 3 message types: identity, selection, FULL
-    def _send_message(self, from_table: str, to_table: str, m_type: Message = Message.UNDECIDED):
+    def _send_message(self, from_table: str, to_table: str, m_type: Message = Message.FULL):
         print('--Sending Message from', from_table, 'to', to_table, 'm_type is', m_type)
         # identity message optimization
         if m_type == Message.IDENTITY:
@@ -178,19 +194,13 @@ class CJT(JoinGraph):
         
         if m_type == Message.UNDECIDED:
             m_type = Message.FULL
-            # if from_table == self.target_relation:
-            #     m_type = Message.FULL
-            # else:
-            #     m_type = Message.SELECTION
-            #     for message_type in [m['message_type'] for m in incoming_messages]:
-            #         if message_type == Message.FULL:
-            #             m_type = Message.FULL
 
         # get the group_by key for this message
         l_join_keys, _ = self.get_join_keys(from_table, to_table)
         from_relations = [m['message'] for m in incoming_messages] + [from_table]
         # compute aggregation
         aggregation = (self.semi_ring.col_product_sum(relations=from_relations) if m_type == Message.FULL else {})
+        
         for attr in l_join_keys:
             aggregation[attr] = (from_table + "." + attr, Aggregator.IDENTITY)
             
@@ -204,6 +214,8 @@ class CJT(JoinGraph):
     
     # by default, lift the target attribute
     # Essentially, this method renames the relevant attributes
+    # TODO: the attr is semi-ring specific. E.g., count semi-ring doesn't even need attr. 
+    # Make it a para to semi-ring
     def lift(self, relation=None, attr=None):
         if relation is None:
             relation = self.target_relation
