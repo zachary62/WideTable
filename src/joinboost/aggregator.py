@@ -13,7 +13,7 @@ def parse_agg(agg, para):
     elif agg == Aggregator.DISTRIBUTED_SUM_PROD:
         assert isinstance(para, list)
         # para structure: [[sum_column and list of annotated columns in other relations],[...]]
-        # example para: [[R1.sR2.c, R3.c], [R2.s, R1.c, R3.c], [R3.s, R1.c, R2.c]]
+        # example para: [[R1.s, R2.c, R3.c], [R2.s, R1.c, R3.c], [R3.s, R1.c, R2.c]]
         _tmp = ['*'.join(elem) for elem in para]
         # expected: SUM(R1.s*R2.c*R3.c + R2.s*R1.c*R3.c + R3.s*R1.c*R2.c)
         return 'SUM(' + '+'.join(_tmp) + ')'
