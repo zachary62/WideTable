@@ -57,6 +57,13 @@ class CJT(JoinGraph):
         pass
     
     # TODO: use "invalidate_message" function to remove message
+    def clean_message(self):
+        for from_table in self.joins:
+            for to_table in self.joins[from_table]:
+                if self.joins[from_table][to_table]['message_type'] != Message.IDENTITY:
+                    m_name = self.joins[from_table][to_table]['message']
+                    self.exe.delete_table(m_name)
+
     def add_relation(self,
                      relation: str,
                      attrs: list = [],
