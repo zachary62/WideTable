@@ -35,6 +35,9 @@ class Executor(ABC):
         self.view_id += 1
         return name
 
+    def add_integer_column(self, table: str, column: str, initial_value: int):
+        pass
+
 
 class DuckdbExecutor(Executor):
     def __init__(self, conn, debug=False):
@@ -53,14 +56,9 @@ class DuckdbExecutor(Executor):
             raise ExecutorException("Please pass in the csv file location")
         self.conn.execute(f"CREATE TABLE {table} AS SELECT * FROM '{table_address}'")
 
-    # adds default annotation columns to make CJT implementation easier
-    # s (sum) column with value 0
-    # c (count) column with value 1
-    def add_default_annotated_columns(self, table: str):
-        self.conn.execute(f"ALTER TABLE {table} ADD COLUMN s integer")
-        self.conn.execute(f"UPDATE {table} SET s=0")
-        self.conn.execute(f"ALTER TABLE {table} ADD COLUMN c integer")
-        self.conn.execute(f"UPDATE {table} SET c=1")
+    def add_integer_column(self, table: str, column: str, initial_value: int):
+        self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} integer")
+        self.conn.execute(f"UPDATE {table} SET {column}={initial_value}")
 
     def delete_table(self, table: str):
         self.check_table(table)
@@ -164,7 +162,7 @@ class DuckdbExecutor(Executor):
         if len(group_by) > 0:
             sql += "GROUP BY " + ",".join(group_by) + '\n'
         if order_by is not None:
-            sql += 'ORDER BY ' + order_by + '\n'
+            sql += 'ORDER BY ' + ",".join(order_by) + '\n'
         if limit is not None:
             sql += 'LIMIT ' + str(limit) + '\n'
         if sample_rate is not None:
@@ -196,5 +194,6 @@ class PandasExecutor(DuckdbExecutor):
         if table_address is None:
             raise ExecutorException("Please pass in the pandas dataframe!")
         self.conn.register(table, table_address)
-    def add_default_annotated_columns(self, table: str):
+
+    def add_integer_column(self, table: str, initial_value: int):
         pass
