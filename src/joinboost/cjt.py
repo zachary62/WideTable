@@ -38,7 +38,7 @@ class CJT(JoinGraph):
         else:
             self.annotations[r_name].append(annotation)
         # TODO: after add annotation, all messages from this relation are invalidated. 
-        # if lazy is false, invalivate messages
+        # if lazy is false, invalidate messages
 
     # TODO: this function takes the from_table, to_table,
     # and remove the message (delete table + remove it from the self.joins)
@@ -151,7 +151,6 @@ class CJT(JoinGraph):
 
     # get the incoming message from one table to another
     # key function for message passing, Sec 3.3 of CJT paper
-    # allow two types of join condition: 1 is for selection, 2 is for semi-join
     def _get_income_messages(self,
                              table: str, 
                              excluded_table: str = ''):
@@ -208,7 +207,7 @@ class CJT(JoinGraph):
         self.joins[from_table][to_table].update({'message': message_name, 'message_type': m_type})
 
     # by default, lift the target attribute
-    # Essentially, this method renames the relevant attributes
+    # Essentially, this method renames the relevant attributes.
     # TODO: the attr is semi-ring specific. E.g., count semi-ring doesn't even need attr. 
     # Make it a para to semi-ring
     def lift(self, relation, attr):
@@ -223,8 +222,10 @@ class CJT(JoinGraph):
             lift_exp[attr] = (attr, Aggregator.IDENTITY)
         new_fact_name = self.exe.execute_spja_query(lift_exp,
                                                     [relation],
-                                                    mode=1)
-        self.replace(relation, new_fact_name)
+                                                    mode=1,
+                                                    table_name=relation)
+        if relation != new_fact_name:
+            self.replace(relation, new_fact_name)
 
     # adds default annotation columns to make CJT implementation easier
     # s (sum) column with value 0

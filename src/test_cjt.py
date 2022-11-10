@@ -48,15 +48,15 @@ class TestCJT(unittest.TestCase):
     """
     def test_many_to_many(self):
         cjt = self.initialize_synthetic_many_to_many()
-        cjt.lift(relation='R', attr='A')
-        cjt.calibration('T')
-        actual = cjt.absorption('T', ['B'], mode=3)
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(A), count(*), R.B 
             FROM R join S on R.B = S.B join T on R.B = T.B 
             GROUP BY R.B ORDER BY R.B
             """).fetchall()
+        cjt.lift(relation='R', attr='A')
+        cjt.calibration('T')
+        actual = cjt.absorption('T', ['B'], mode=3)
         self.assertEqual(actual, expected)
 
     """
@@ -69,16 +69,16 @@ class TestCJT(unittest.TestCase):
     """
     def test_one_to_many(self):
         cjt = self.initialize_synthetic_one_to_many()
-        cjt.lift(relation='T', attr='K')
-        cjt.calibration('joinboost_tmp_0')
-        actual = cjt.absorption('joinboost_tmp_0', ['B'], mode=3)
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(T.K), count(*), T.B 
             FROM R join T on R.B = T.B join S on S.F = T.F 
             GROUP BY T.B ORDER BY T.B
             """
-            ).fetchall()
+        ).fetchall()
+        cjt.lift(relation='T', attr='K')
+        cjt.calibration('T')
+        actual = cjt.absorption('T', ['B'], mode=3)
         self.assertEqual(actual, expected)
 
 

@@ -117,9 +117,9 @@ class JoinGraph:
         self.joins[table_name_right][table_name_left] = {"keys": (right_keys, left_keys)}
         
     def replace(self, table_prev, table_after):
-        if table_prev not in self.relation_schema: 
+        if table_prev not in self.relation_schema:
             raise JoinGraphException(table_prev + ' doesn\'t exit!')
-        if table_after in self.relation_schema: 
+        if table_after in self.relation_schema:
             raise JoinGraphException(table_after + ' already exits!')
         self.relation_schema[table_after] = self.relation_schema[table_prev]
         del self.relation_schema[table_prev]

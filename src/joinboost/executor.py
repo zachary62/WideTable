@@ -94,8 +94,9 @@ class DuckdbExecutor(Executor):
                            limit: int = None,
                            sample_rate: float = None,
                            replace: bool = True,
-                           mode: int = 4):
-        
+                           mode: int = 4,
+                           table_name: str = None):
+
         spja = self.spja_query(aggregate_expressions=aggregate_expressions,
                                from_tables=from_tables,
                                select_conds=select_conds,
@@ -106,7 +107,10 @@ class DuckdbExecutor(Executor):
                                sample_rate=sample_rate)
         
         if mode == 1:
-            name_ = self.get_next_name()
+            if table_name is None:
+                name_ = self.get_next_name()
+            else:
+                name_ = table_name
             entity_type_ = 'TABLE '
             sql = 'CREATE ' + ('OR REPLACE ' if replace else '') + entity_type_  + name_ + ' AS '
             sql += spja
