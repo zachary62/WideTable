@@ -33,12 +33,6 @@ class JoinGraph:
     def get_type(self, relation, feature): 
         return self.relation_schema[relation][feature]
 
-    # set target/root relation. This corresponds to the
-    # root of the join graph for calibration.
-    # TODO: remove it
-    def set_root_relation(self, root_relation):
-        self.target_relation = root_relation
-
     def get_joins(self):
         return self.joins
     
@@ -70,7 +64,6 @@ class JoinGraph:
                      relation_address = None):
         
         self.exe.add_table(relation, relation_address)
-        self.exe.add_default_annotated_columns(relation)
         self.joins[relation] = dict()
         if relation not in self.relation_schema:
             self.relation_schema[relation] = {}
@@ -124,15 +117,13 @@ class JoinGraph:
         self.joins[table_name_right][table_name_left] = {"keys": (right_keys, left_keys)}
         
     def replace(self, table_prev, table_after):
-        if table_prev not in self.relation_schema: 
+        if table_prev not in self.relation_schema:
             raise JoinGraphException(table_prev + ' doesn\'t exit!')
-        if table_after in self.relation_schema: 
+        if table_after in self.relation_schema:
             raise JoinGraphException(table_after + ' already exits!')
         self.relation_schema[table_after] = self.relation_schema[table_prev]
         del self.relation_schema[table_prev]
-        if self.target_relation == table_prev:
-            self.target_relation = table_after
-            
+
         for relation in self.joins:
             if table_prev in self.joins[relation]:
                 self.joins[relation][table_after] = self.joins[relation][table_prev]
@@ -145,14 +136,7 @@ class JoinGraph:
     def _preprocess(self):
         # self.check_all_features_exist()
         self.check_acyclic()
-        
-    def check_target_exist(self):
-        if self.target_var is None:
-            raise JoinGraphException("Target variable doesn't exist!")
-            
-        if self.target_relation is None:
-            raise JoinGraphException("Target relation doesn't exist!")
-        
+
     def check_all_features_exist(self):
         for table in self.relation_schema:
             features = self.relation_schema[table].keys()
@@ -170,8 +154,6 @@ class JoinGraph:
         links = []
         for table_name in self.relation_schema:
             attributes = set(self.exe.get_schema(table_name))
-            if table_name == self.target_relation:
-                attributes.add(self.target_var)
             nodes.append({"id": table_name, "attributes": list(attributes)})
 
         # avoid edge in opposite direction

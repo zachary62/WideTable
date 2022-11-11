@@ -11,10 +11,10 @@ def parse_agg(agg, para):
         assert isinstance(para, str)
         return 'SUM(' + para + ')'
     elif agg == Aggregator.DISTRIBUTED_SUM_PROD:
-        assert isinstance(para, dict)
-        # para structure: {sum_column => list of annotated columns in other relations}
-        # example para: {R1.s => [R2.c, R3.c], R2.s => [R1.c, R3.c], R3.s => [R1.c, R2.c]}
-        _tmp = ['*'.join([key] + values) for key, values in para.items()]
+        assert isinstance(para, list)
+        # para structure: [[sum_column and list of annotated columns in other relations],[...]]
+        # example para: [[R1.s, R2.c, R3.c], [R2.s, R1.c, R3.c], [R3.s, R1.c, R2.c]]
+        _tmp = ['*'.join(elem) for elem in para]
         # expected: SUM(R1.s*R2.c*R3.c + R2.s*R1.c*R3.c + R3.s*R1.c*R2.c)
         return 'SUM(' + '+'.join(_tmp) + ')'
     elif agg == Aggregator.SUM_PROD:

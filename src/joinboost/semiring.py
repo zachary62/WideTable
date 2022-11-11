@@ -64,9 +64,9 @@ class varSemiRing(SemiRing):
         for i, relation in enumerate(relations):
             annotated_count[f'"{relation}"'] = f'"{c}"'
 
-        sum_join_calculation = {}
+        sum_join_calculation = []
         for i, relation in enumerate(relations):
-            sum_join_calculation[f'"{str(relation)}"."{s}"'] = [f'"{rel}"."{c}"' for rel in (relations[:i] + relations[i+1:])]
+            sum_join_calculation.append([f'"{str(relation)}"."{s}"'] + [f'"{rel}"."{c}"' for rel in (relations[:i] + relations[i+1:])])
 
         return {s_after: (sum_join_calculation, Aggregator.DISTRIBUTED_SUM_PROD), c_after: (annotated_count, Aggregator.SUM_PROD)}
 
