@@ -23,7 +23,7 @@ class TestCJT(unittest.TestCase):
         cjt.add_join('R', 'S', ['B'], ['B']);
         cjt.add_join('S', 'T', ['B'], ['B']);
         return cjt
-        
+
     """
     Join Graph for data/synthetic-one_to_many/
     R(ABDH) - T(BFK) - S(FE)
@@ -38,7 +38,7 @@ class TestCJT(unittest.TestCase):
         cjt.add_join('R', 'T', ['B'], ['B']);
         cjt.add_join('S', 'T', ['F'], ['F']);
         return cjt
-    
+
     """
     Tests if message passing works in many to many join graph.
     Following tables have many to many cardinality on B.
@@ -106,6 +106,31 @@ class TestCJT(unittest.TestCase):
         cjt.calibration('T')
         actual = cjt.absorption('T', ['B'], mode=3)
         self.assertEqual(actual, expected)
+
+    """
+    Tests if message passing works in many to many join graph.
+    Following tables have many to many cardinality on B.
+    Test Query:
+        SELECT SUM(A), count(*), R.B
+        FROM R join G on R.B = G.B join T on R.B = T.B
+        WHERE G.B = 2
+        GROUP BY R.B ORDER BY R.B
+    """
+    def test_many_to_many_with_selection(self):
+        cjt = self.initialize_synthetic_many_to_many()
+        expected = cjt.exe.conn.execute(
+            """
+            SELECT SUM(A), count(*), R.B 
+            FROM R join S on R.B = S.B join T on R.B = T.B 
+            WHERE S.B = 2
+            GROUP BY R.B ORDER BY R.B
+            """).fetchall()
+        cjt.lift(relation='R', attr='A')
+        cjt.add_annotations('S', ['B', Annotation.NOT_DISTINCT, '2'])
+        cjt.calibration('T')
+        actual = cjt.absorption('T', ['B'], mode=3)
+        self.assertEqual(actual, expected)
+
 
 if __name__ == '__main__':
     unittest.main()

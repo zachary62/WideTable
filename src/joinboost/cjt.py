@@ -8,16 +8,16 @@ class CJT(JoinGraph):
     def __init__(self,
                  semi_ring: SemiRing,
                  join_graph: JoinGraph,
-                 annotations: dict = {}):
+                 annotations: dict={}):
         self.message_id = 0
         self.semi_ring = semi_ring
         super().__init__(join_graph.exe,
                          join_graph.joins,
                          join_graph.relation_schema)
         
-        # maps relation to a set of annotations {rel ->
-        self.annotations = annotations
-    
+        # maps relation to a set of annotations {rel -> [ attr, annotation_type, value]
+        self.annotations = {}
+
     # given the from_table and to_table, return the message in between
     def get_message(self, from_table: str, to_table: str):
         return self.joins[from_table][to_table]['message']
