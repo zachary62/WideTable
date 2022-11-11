@@ -5,6 +5,7 @@ import copy
 from .executor import ExecutorFactory
 import pkgutil
 
+
 class JoinGraphException(Exception):
     pass
 
@@ -71,12 +72,6 @@ class JoinGraph:
         for x in attrs:
             self.relation_schema[relation][x] = ""
 
-    # get features for each table
-    def get_relation_features(self, r_name):
-        if r_name not in self.relation_schema:
-            raise JoinGraphException('Attribute not in ' + r_name)
-        return list(self.relation_schema[r_name].keys())
-    
     # get the join keys between two tables
     # all get all the join keys of one table
     # TODO: check if the join keys exist
@@ -100,7 +95,6 @@ class JoinGraph:
         #                     self.get_join_keys(table)
         useful_attributes = self.get_join_keys(table)
         return list(set(useful_attributes))
-    
 
     def add_join(self, table_name_left: str, table_name_right: str, left_keys: list, right_keys: list):
         if len(left_keys) != len(right_keys):

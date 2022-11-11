@@ -15,12 +15,16 @@ class CJT(JoinGraph):
                          join_graph.joins,
                          join_graph.relation_schema)
         
-        # maps relation to a set of annotations
+        # maps relation to a set of annotations {rel ->
         self.annotations = annotations
     
     # given the from_table and to_table, return the message in between
     def get_message(self, from_table: str, to_table: str):
         return self.joins[from_table][to_table]['message']
+
+    def delete_message(self, from_table: str, to_table: str):
+        del self.joins[from_table][to_table]['message']
+        self.joins[from_table][to_table]['message_type'] = 'missing'
 
     def get_parsed_annotations(self, table):
         if table not in self.annotations:
@@ -31,21 +35,24 @@ class CJT(JoinGraph):
         # zach: I don't remember why the "True" for prepend. maybe we can remove it
         return parse_ann(self.annotations, True)
 
-    def add_annotations(self, r_name: str, annotation: str, lazy=True):
+    def add_annotations(self, r_name: str, annotation, lazy=True):
         # TODO: add some check for annotation. E.g., is the referenced attribute even in the relation?
         if r_name not in self.annotations:
             self.annotations[r_name] = [annotation]
         else:
             self.annotations[r_name].append(annotation)
-        # TODO: after add annotation, all messages from this relation are invalidated. 
-        # if lazy is false, invalidate messages
 
-    # TODO: this function takes the from_table, to_table,
-    # and remove the message (delete table + remove it from the self.joins)
-    # if lazy, don't delete table in databases
-    def invalidate_message(self, from_table, to_table, lazy):
-        pass
-    
+        if not lazy:
+            for to_relation,v in self.joins[r_name]:
+                self.invalidate_message(r_name, to_relation)
+
+    def invalidate_message(self, from_table, to_table, lazy:bool):
+
+        message_name = self.get_message(from_table, to_table)
+        self.delete_message(from_table, to_table)
+        if not lazy:
+            self.exe.delete_table(message_name)
+
     # TODO: check relation to leave is a leaf node in the join graph.
     def remove_relation(self, relation):
         pass
@@ -64,6 +71,7 @@ class CJT(JoinGraph):
                     m_name = self.joins[from_table][to_table]['message']
                     self.exe.delete_table(m_name)
 
+    # TODO: don't add columns here, it should be part of semi-ring
     def add_relation(self,
                      relation: str,
                      attrs: list = [],

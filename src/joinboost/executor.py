@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from .aggregator import *
 import time
 
+
 class ExecutorException(Exception):
     pass
 
@@ -28,7 +29,7 @@ class Executor(ABC):
 
     def __init__(self):
         self.view_id = 0
-        self.prefix = 'joinboost_tmp_'
+        self.prefix = 'm_'
 
     def get_next_name(self):
         name = self.prefix + str(self.view_id)
@@ -50,11 +51,13 @@ class DuckdbExecutor(Executor):
         table_info = self._execute_query('PRAGMA table_info(' + table + ')')
         return [x[1] for x in table_info]
         
-
     def add_table(self, table: str, table_address):
         if table_address is None:
             raise ExecutorException("Please pass in the csv file location")
         self.conn.execute(f"CREATE TABLE {table} AS SELECT * FROM '{table_address}'")
+
+    def delete_table(self, table: str):
+        self.conn.execute(f"DROP TABLE IF EXISTS {table};")
 
     def add_integer_column(self, table: str, column: str, initial_value: int):
         self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} integer")

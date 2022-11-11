@@ -28,14 +28,28 @@ class SemiRing(ABC):
     def get_sr_in_select(self, m_type: Message, f_table: str, in_msgs: list, f_table_attrs: list):
         pass
 
+
 class SumSemiRing(SemiRing):
     def __init__(self, relation, attr):
-        pass
+        self.relation = relation
+        self.attr = attr
+
+    def lift_exp(self, s_after='s'):
+        return {s_after: (f'"{self.relation}"."{self.attr}"', Aggregator.IDENTITY)}
+
 
 class CountSemiRing(SemiRing):
-    pass
-    
+
+    def __init__(self, relation):
+        self.relation = relation
+        self.attr = '1'
+
+    def lift_exp(self, c_after='c'):
+        return {c_after: (f'"{self.relation}"."{self.attr}"', Aggregator.IDENTITY)}
+
+
 class varSemiRing(SemiRing):
+
     def __init__(self, s=0, c=0):
         self.r_pair = (s, c)
 
