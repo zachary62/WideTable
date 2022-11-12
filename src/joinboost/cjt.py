@@ -17,8 +17,15 @@ class CJT(JoinGraph):
                          join_graph.joins,
                          join_graph.relation_schema)
         
-        # maps relation to a set of annotations {rel -> [ attr, annotation_type, value]
+        # maps relation to a set of annotations
+        # {rel -> [ attr, annotation_type, value]
         self.annotations = {}
+        
+        # for now, treat group-by annotations specially
+        # maps relation -> [group attributes]
+        # TODO: currently assume that attribute name are unique across relations
+        self.groupby = {}
+        
 
     # given the from_table and to_table, return the message in between
     def get_message(self, from_table: str, to_table: str):
@@ -36,16 +43,33 @@ class CJT(JoinGraph):
     def get_all_parsed_annotations(self):
         return parse_ann(self.annotations)
 
-    def add_annotations(self, r_name: str, annotation, lazy=True):
-        # TODO: add some check for annotation. E.g., is the referenced attribute even in the relation?
-        if r_name not in self.annotations:
-            self.annotations[r_name] = [annotation]
+    def add_annotations(self, relation: str, annotation, lazy=True):
+        # TODO: add some check for annotation. 
+        # E.g., is the referenced attribute even in the relation?
+        if relation not in self.annotations:
+            self.annotations[relation] = [annotation]
         else:
-            self.annotations[r_name].append(annotation)
+            self.annotations[relation].append(annotation)
 
         if not lazy:
-            for to_relation,v in self.joins[r_name]:
-                self.invalidate_message(r_name, to_relation)
+            for to_relation,v in self.joins[relation]:
+                self.invalidate_message(relation, to_relation)
+    
+    def remove_annotations(self, relation: str, annotation, lazy=True):
+        pass
+                
+    def add_groupbys(self, relation, attributes, lazy=True):
+        if relation not in self.annotations:
+            self.groupby[relation] = attributes
+        else:
+            self.groupby[relation] += attributes
+
+        if not lazy:
+            for to_relation,v in self.joins[relation]:
+                self.invalidate_message(relation, to_relation)
+                
+    def remove_groupbys(self, relation, attributes, lazy=True):
+        pass
 
     def invalidate_message(self, from_table, to_table, lazy:bool):
 
@@ -144,14 +168,29 @@ class CJT(JoinGraph):
 
         from_relations = [m['message'] for m in incoming_messages] + [table]
         aggregate_expressions = self.semi_ring.col_product_sum(from_relations)
+        
+        # TODO: this is ugly. Refactor the codes
+        group_by_query = []
         for attr in group_by:
-            aggregate_expressions[attr] = (table + "." + attr, Aggregator.IDENTITY)
-
+            if attr in self.get_join_keys(table):
+                aggregate_expressions[attr] = (table + "." + attr, Aggregator.IDENTITY)
+                group_by_query.append(table + '.' + attr)
+            else:
+                aggregate_expressions[attr] = (attr, Aggregator.IDENTITY)
+                group_by_query.append(attr)
+                
+        order_by_query = []        
+        for attr in order_by:
+            if attr in self.get_join_keys(table):
+                order_by_query.append(table + '.' + attr)
+            else:
+                order_by_query.append(attr)
+        
         return self.exe.execute_spja_query(aggregate_expressions,
                                            from_tables=from_relations,
                                            select_conds=join_conds+self.get_parsed_annotations(table),
-                                           group_by=[table + '.' + attr for attr in group_by],
-                                           order_by=[table + '.' + attr for attr in order_by],
+                                           group_by=group_by_query,
+                                           order_by=order_by_query,
                                            mode=mode)
 
     # get the incoming message from one table to another
@@ -172,11 +211,11 @@ class CJT(JoinGraph):
                     continue
 
                 # get the join conditions between from_table and incoming_message
-                l_join_keys, r_join_keys = self.get_join_keys(neighbour_table, table)
+                from_join_keys, r_join_keys = self.get_join_keys(neighbour_table, table)
                 incoming_messages.append(incoming_message)
 
-                join_conds += [incoming_message["message"] + "." + l_join_keys[i] + " IS NOT DISTINCT FROM " +
-                               table + "." + r_join_keys[i] for i in range(len(l_join_keys))]
+                join_conds += [incoming_message["message"] + "." + from_join_keys[i] + " IS NOT DISTINCT FROM " +
+                               table + "." + r_join_keys[i] for i in range(len(from_join_keys))]
                 
         return incoming_messages, join_conds
 
@@ -198,22 +237,36 @@ class CJT(JoinGraph):
             m_type = Message.FULL
 
         # get the group_by key for this message
-        l_join_keys, _ = self.get_join_keys(from_table, to_table)
+        from_join_keys, _ = self.get_join_keys(from_table, to_table)
         from_relations = [m['message'] for m in incoming_messages] + [from_table]
+        from_group_bys = [attr for m in incoming_messages for attr in m['message_groupby']]
+        print(from_group_bys)
+        if from_table in self.groupby:
+            from_group_bys += self.groupby[from_table]
+        
+        group_by = [from_table + '.' + attr for attr in from_join_keys] \
+                    + from_group_bys
+        
         # compute aggregation
         aggregation = (self.semi_ring.col_product_sum(relations=from_relations) 
                        if m_type == Message.FULL else {})
         
-        for attr in l_join_keys:
+        # TODO: this is ugly! fix it such that "for attr in group_by" works
+        for attr in from_join_keys:
             aggregation[attr] = (from_table + "." + attr, Aggregator.IDENTITY)
+        for attr in from_group_bys:
+            aggregation[attr] = (attr, Aggregator.IDENTITY)
+        
 
         message_name = self.exe.execute_spja_query(aggregation,
                                                     from_tables=from_relations,
                                                     select_conds=join_conds+self.get_parsed_annotations(from_table),
-                                                    group_by=[from_table + '.' + attr for attr in l_join_keys],
+                                                    group_by=group_by,
                                                     mode=1)
 
-        self.joins[from_table][to_table].update({'message': message_name, 'message_type': m_type})
+        self.joins[from_table][to_table].update({'message': message_name, 
+                                                 'message_type': m_type,
+                                                 'message_groupby': from_group_bys})
 
     def lift(self, relation):
         if relation is None:
