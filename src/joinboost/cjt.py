@@ -1,5 +1,5 @@
 import copy
-from .semiring import SemiRing
+from .semiring import *
 from .joingraph import JoinGraph
 from .aggregator import *
 
@@ -11,6 +11,8 @@ class CJT(JoinGraph):
                  annotations: dict={}):
         self.message_id = 0
         self.semi_ring = semi_ring
+        # maps relation to the columns storing semi-ring. e.g., "R" -> {"s": "s", "c": "c"}
+        self.semi_ring_cols = {}
         super().__init__(join_graph.exe,
                          join_graph.joins,
                          join_graph.relation_schema)
@@ -32,8 +34,7 @@ class CJT(JoinGraph):
         return parse_ann({table: self.annotations[table]})
 
     def get_all_parsed_annotations(self):
-        # zach: I don't remember why the "True" for prepend. maybe we can remove it
-        return parse_ann(self.annotations, True)
+        return parse_ann(self.annotations)
 
     def add_annotations(self, r_name: str, annotation, lazy=True):
         # TODO: add some check for annotation. E.g., is the referenced attribute even in the relation?
@@ -70,14 +71,12 @@ class CJT(JoinGraph):
                 if self.joins[from_table][to_table]['message_type'] != Message.IDENTITY:
                     m_name = self.joins[from_table][to_table]['message']
                     self.exe.delete_table(m_name)
-
-    # TODO: don't add columns here, it should be part of semi-ring
+                    
     def add_relation(self,
                      relation: str,
                      attrs: list = [],
                      relation_address=None):
         super().add_relation(relation, attrs=attrs, relation_address=relation_address)
-        self.add_default_annotated_column(relation)
 
     def get_semi_ring(self):
         return self.semi_ring
@@ -91,12 +90,12 @@ class CJT(JoinGraph):
                     annotations=annotations)
         return c_cjt
 
-    def calibration(self, root_table: str):
+    def calibration(self, root_table=None):
         # TODO: choose the first relation in the joins
         if not root_table:
             # currently below doesn't pass test. check why
-            # root_table = list(self.joins.keys())[0]
-            raise ValueError("root table can not be None")
+            root_table = self.get_relations()[0]
+#             raise ValueError("root table can not be None")
         self.upward_message_passing(root_table, m_type=Message.FULL)
         self.downward_message_passing(root_table, m_type=Message.FULL)
         
@@ -109,9 +108,7 @@ class CJT(JoinGraph):
             raise ValueError("root table can not be None")
         self._pre_dfs(rooto_table, m_type=m_type)
         return msgs
-
-    # TODO: this is not working if upward_message_passing from non-fact table
-    #  Above TODO needs to be rechecked
+    
     def upward_message_passing(self, root_table: str,
                                m_type: Message = Message.UNDECIDED):
         if not root_table:
@@ -141,7 +138,7 @@ class CJT(JoinGraph):
                 self._send_message(currento_table, c_neighbor, m_type=m_type)
                 self._pre_dfs(c_neighbor, currento_table, m_type=m_type)
 
-    def absorption(self, table: str, group_by: list, mode=4):
+    def absorption(self, table: str, group_by: list, order_by = [], mode=4):
         # from_table_attrs = self.get_relation_features(table)
         incoming_messages, join_conds = self._get_income_messages(table)
 
@@ -154,7 +151,7 @@ class CJT(JoinGraph):
                                            from_tables=from_relations,
                                            select_conds=join_conds+self.get_parsed_annotations(table),
                                            group_by=[table + '.' + attr for attr in group_by],
-                                           order_by=[table + '.' + attr for attr in group_by],
+                                           order_by=[table + '.' + attr for attr in order_by],
                                            mode=mode)
 
     # get the incoming message from one table to another
@@ -164,19 +161,22 @@ class CJT(JoinGraph):
                              excluded_table: str = ''):
         incoming_messages, join_conds = [], []
         for neighbour_table in self.joins[table]:
-            # if neighbour_table != excluded_table:
-            incoming_message = self.joins[neighbour_table][table]
-            if 'message_type' not in incoming_message:
-                continue
-            if 'message_type' in incoming_message and incoming_message['message_type'] == Message.IDENTITY:
-                continue
+            if neighbour_table != excluded_table:
+                incoming_message = self.joins[neighbour_table][table]
+                # there is no incoming message
+                # maybe good to report error
+                if 'message_type' not in incoming_message:
+                    continue
+                if 'message_type' in incoming_message and \
+                    incoming_message['message_type'] == Message.IDENTITY:
+                    continue
 
-            # get the join conditions between from_table and incoming_message
-            l_join_keys, r_join_keys = self.get_join_keys(neighbour_table, table)
-            incoming_messages.append(incoming_message)
+                # get the join conditions between from_table and incoming_message
+                l_join_keys, r_join_keys = self.get_join_keys(neighbour_table, table)
+                incoming_messages.append(incoming_message)
 
-            join_conds += [incoming_message["message"] + "." + l_join_keys[i] + " IS NOT DISTINCT FROM " +
-                           table + "." + r_join_keys[i] for i in range(len(l_join_keys))]
+                join_conds += [incoming_message["message"] + "." + l_join_keys[i] + " IS NOT DISTINCT FROM " +
+                               table + "." + r_join_keys[i] for i in range(len(l_join_keys))]
                 
         return incoming_messages, join_conds
 
@@ -201,7 +201,8 @@ class CJT(JoinGraph):
         l_join_keys, _ = self.get_join_keys(from_table, to_table)
         from_relations = [m['message'] for m in incoming_messages] + [from_table]
         # compute aggregation
-        aggregation = (self.semi_ring.col_product_sum(relations=from_relations) if m_type == Message.FULL else {})
+        aggregation = (self.semi_ring.col_product_sum(relations=from_relations) 
+                       if m_type == Message.FULL else {})
         
         for attr in l_join_keys:
             aggregation[attr] = (from_table + "." + attr, Aggregator.IDENTITY)
@@ -214,18 +215,13 @@ class CJT(JoinGraph):
 
         self.joins[from_table][to_table].update({'message': message_name, 'message_type': m_type})
 
-    # by default, lift the target attribute
-    # Essentially, this method renames the relevant attributes.
-    # TODO: the attr is semi-ring specific. E.g., count semi-ring doesn't even need attr. 
-    # Make it a para to semi-ring
-    def lift(self, relation, attr):
+    def lift(self, relation):
         if relation is None:
             raise ValueError("Invalid relation")
-        if attr is None:
-            raise ValueError("Invalid attribute")
-        lift_exp = self.semi_ring.lift_exp(relation + '.' + attr)
+        
+        lift_exp = self.semi_ring.lift_exp(relation=relation)
+        
         # copy the remaining attributes as they are (no aggregation)
-        # TODO: include all attributes. We may place selection on these attributes
         for attr in self.get_useful_attributes(relation):
             lift_exp[attr] = (attr, Aggregator.IDENTITY)
         new_fact_name = self.exe.execute_spja_query(lift_exp,
@@ -234,10 +230,8 @@ class CJT(JoinGraph):
                                                     table_name=relation)
         if relation != new_fact_name:
             self.replace(relation, new_fact_name)
-
-    # adds default annotation columns to make CJT implementation easier
-    # s (sum) column with value 0
-    # c (count) column with value 1
-    def add_default_annotated_column(self, table: str):
-        self.exe.add_integer_column(table, 's', 0)
-        self.exe.add_integer_column(table, 'c', 1)
+    
+    def lift_all(self):
+        for relation in self.get_relations():
+            self.lift(relation)
+    

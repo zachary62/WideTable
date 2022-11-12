@@ -4,22 +4,25 @@ import duckdb
 
 from joinboost.cjt import CJT
 from joinboost.joingraph import JoinGraph
-from joinboost.semiring import varSemiRing
-from src.joinboost.aggregator import Annotation
+from joinboost.semiring import AvgSemiRing
+from joinboost.aggregator import Annotation
 
 
 class TestCJT(unittest.TestCase):
     """
     Join Graph for data/synthetic-many-to-many/
-    T(BF) - R(ABDH) - S(BE)
+    T(BF) - S(BE) - R(ABDH) 
     """
-    def initialize_synthetic_many_to_many(self):
+    def initialize_synthetic_many_to_many(self, semi_ring=AvgSemiRing()):
         duck_db_conn = duckdb.connect(database=':memory:')
         join_graph = JoinGraph(duck_db_conn)
-        cjt = CJT(semi_ring=varSemiRing(), join_graph=join_graph)
-        cjt.add_relation('R', relation_address='../data/synthetic-many-to-many/R.csv')
-        cjt.add_relation('S', relation_address='../data/synthetic-many-to-many/S.csv')
-        cjt.add_relation('T', relation_address='../data/synthetic-many-to-many/T.csv')
+        cjt = CJT(semi_ring=semi_ring, join_graph=join_graph)
+        cjt.add_relation('R', attrs=["D","H"], 
+                         relation_address='../data/synthetic-many-to-many/R.csv')
+        cjt.add_relation('S', attrs=["E"], 
+                         relation_address='../data/synthetic-many-to-many/S.csv')
+        cjt.add_relation('T', attrs=["F"], 
+                         relation_address='../data/synthetic-many-to-many/T.csv')
         cjt.add_join('R', 'S', ['B'], ['B']);
         cjt.add_join('S', 'T', ['B'], ['B']);
         return cjt
@@ -28,12 +31,12 @@ class TestCJT(unittest.TestCase):
     Join Graph for data/synthetic-one_to_many/
     R(ABDH) - T(BFK) - S(FE)
     """
-    def initialize_synthetic_one_to_many(self):
+    def initialize_synthetic_one_to_many(self, semi_ring=AvgSemiRing()):
         duck_db_conn = duckdb.connect(database=':memory:')
         join_graph = JoinGraph(duck_db_conn)
-        cjt = CJT(semi_ring=varSemiRing(), join_graph=join_graph)
-        cjt.add_relation('R', relation_address='../data/synthetic-one-to-many/R.csv')
-        cjt.add_relation('S', relation_address='../data/synthetic-one-to-many/S.csv')
+        cjt = CJT(semi_ring=semi_ring, join_graph=join_graph)
+        cjt.add_relation('R', attrs=["A", "D", "H"], relation_address='../data/synthetic-one-to-many/R.csv')
+        cjt.add_relation('S', attrs=["E"], relation_address='../data/synthetic-one-to-many/S.csv')
         cjt.add_relation('T', relation_address='../data/synthetic-one-to-many/T.csv')
         cjt.add_join('R', 'T', ['B'], ['B']);
         cjt.add_join('S', 'T', ['F'], ['F']);
@@ -48,16 +51,16 @@ class TestCJT(unittest.TestCase):
         GROUP BY R.B ORDER BY R.B
     """
     def test_many_to_many(self):
-        cjt = self.initialize_synthetic_many_to_many()
+        cjt = self.initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='R', attr='A'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(A), count(*), R.B 
             FROM R join S on R.B = S.B join T on R.B = T.B 
             GROUP BY R.B ORDER BY R.B
             """).fetchall()
-        cjt.lift(relation='R', attr='A')
-        cjt.calibration('T')
-        actual = cjt.absorption('T', ['B'], mode=3)
+        cjt.lift_all()
+        cjt.calibration()
+        actual = cjt.absorption('T', ['B'], ['B'], mode=3)
         self.assertEqual(actual, expected)
 
     """
@@ -69,7 +72,7 @@ class TestCJT(unittest.TestCase):
         GROUP BY T.B ORDER BY T.B
     """
     def test_one_to_many(self):
-        cjt = self.initialize_synthetic_one_to_many()
+        cjt = self.initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(relation='T', attr='K'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(T.K), count(*), T.B 
@@ -77,9 +80,9 @@ class TestCJT(unittest.TestCase):
             GROUP BY T.B ORDER BY T.B
             """
         ).fetchall()
-        cjt.lift(relation='T', attr='K')
-        cjt.calibration('T')
-        actual = cjt.absorption('T', ['B'], mode=3)
+        cjt.lift_all()
+        cjt.calibration()
+        actual = cjt.absorption('T', ['B'], ['B'], mode=3)
         self.assertEqual(actual, expected)
 
     """
@@ -92,7 +95,7 @@ class TestCJT(unittest.TestCase):
         GROUP BY T.B ORDER BY T.B
     """
     def test_one_to_many_with_selection(self):
-        cjt = self.initialize_synthetic_one_to_many()
+        cjt = self.initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(relation='T', attr='K'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(T.K), count(*), T.B 
@@ -102,9 +105,9 @@ class TestCJT(unittest.TestCase):
             """
         ).fetchall()
         cjt.add_annotations('S', ['E', Annotation.NOT_DISTINCT, '2'])
-        cjt.lift(relation='T', attr='K')
-        cjt.calibration('T')
-        actual = cjt.absorption('T', ['B'], mode=3)
+        cjt.lift_all()
+        cjt.calibration()
+        actual = cjt.absorption('T', ['B'], ['B'], mode=3)
         self.assertEqual(actual, expected)
 
     """
@@ -117,7 +120,7 @@ class TestCJT(unittest.TestCase):
         GROUP BY R.B ORDER BY R.B
     """
     def test_many_to_many_with_selection(self):
-        cjt = self.initialize_synthetic_many_to_many()
+        cjt = self.initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='R', attr='A'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(A), count(*), R.B 
@@ -125,10 +128,11 @@ class TestCJT(unittest.TestCase):
             WHERE S.B = 2
             GROUP BY R.B ORDER BY R.B
             """).fetchall()
-        cjt.lift(relation='R', attr='A')
+        
         cjt.add_annotations('S', ['B', Annotation.NOT_DISTINCT, '2'])
-        cjt.calibration('T')
-        actual = cjt.absorption('T', ['B'], mode=3)
+        cjt.lift_all()
+        cjt.calibration()
+        actual = cjt.absorption('T', ['B'], ['B'], mode=3)
         self.assertEqual(actual, expected)
 
 

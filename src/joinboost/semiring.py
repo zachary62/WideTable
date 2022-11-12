@@ -30,7 +30,7 @@ class SemiRing(ABC):
 
 
 class SumSemiRing(SemiRing):
-    def __init__(self, relation, attr):
+    def __init__(self, relation="", attr=""):
         self.relation = relation
         self.attr = attr
 
@@ -40,34 +40,28 @@ class SumSemiRing(SemiRing):
 
 class CountSemiRing(SemiRing):
 
-    def __init__(self, relation):
-        self.relation = relation
-        self.attr = '1'
+    def __init__(self):
+        pass
 
     def lift_exp(self, c_after='c'):
         return {c_after: (f'"{self.relation}"."{self.attr}"', Aggregator.IDENTITY)}
 
 
-class varSemiRing(SemiRing):
+class AvgSemiRing(SemiRing):
 
-    def __init__(self, s=0, c=0):
-        self.r_pair = (s, c)
-
-    def set_semi_ring(self, TS: float, TC: int):
-        self.r_pair = (TS, TC)
-        
-    def __add__(self, other):
-        return varSemiRing(self.r_pair[0] + other.r_pair[0], self.r_pair[1] + other.r_pair[1])
-        
-    def __sub__(self, other):
-        return varSemiRing(self.r_pair[0] - other.r_pair[0], self.r_pair[1] - other.r_pair[1])
+    def __init__(self, relation="", attr=""):
+        self.relation = relation
+        self.attr = attr
 
     def multiplication(self, semi_ring):
         s, c = semi_ring.get_value()
         self.r_pair = (self.r_pair[0] * c + self.r_pair[1] * s, c * self.r_pair[1])
 
-    def lift_exp(self, s='s', c='1', s_after='s', c_after='c'):
-        return {s_after: (s, Aggregator.IDENTITY), c_after: (c, Aggregator.IDENTITY)}
+    def lift_exp(self, s_after='s', c_after='c', relation=""):
+        if relation == self.relation:
+            return {s_after: (self.attr, Aggregator.IDENTITY), c_after: ("1", Aggregator.IDENTITY)}
+        else:
+            return {s_after: ("0", Aggregator.IDENTITY), c_after: ("1", Aggregator.IDENTITY)}
 
     def col_sum(self, s='s', c='c', s_after='s', c_after='c'):
         return {s_after: (s, Aggregator.SUM), c_after: (c, Aggregator.SUM)}
@@ -87,3 +81,10 @@ class varSemiRing(SemiRing):
     def get_value(self):
         return self.r_pair
     
+# check if expression has all identity aggregator
+def all_identity(expression):
+    for key in expression:
+        _, agg = expression[key]
+        if agg != Aggregator.IDENTITY:
+            return False
+    return True

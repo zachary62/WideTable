@@ -5,10 +5,8 @@ import copy
 from .executor import ExecutorFactory
 import pkgutil
 
-
 class JoinGraphException(Exception):
     pass
-
 
 class JoinGraph:
     def __init__(self, 
@@ -17,12 +15,16 @@ class JoinGraph:
                 relation_schema = {}):
         
         self.exe = ExecutorFactory(exe)
-        # maps each from_relation => to_relation => {keys: (from_keys, to_keys), message_type: "", message: name}
+        # maps each from_relation => to_relation => 
+        # {keys: (from_keys, to_keys), message_type: "", message: name, ...}
         self.joins = copy.deepcopy(joins)
-        # maps each relation => feature => feature_type
+        
+        # maps each relation => attribute => feature_type
         self.relation_schema = copy.deepcopy(relation_schema)
+        
         # some magic/random number used for jupyter notebook display
         self.session_id = int(time.time())
+        
         self.rep_template = data = pkgutil.get_data(__name__, "d3graph.html").decode('utf-8')
     
     def get_relations(self): 
@@ -31,8 +33,11 @@ class JoinGraph:
     def get_relation_schema(self): 
         return self.relation_schema
     
-    def get_type(self, relation, feature): 
-        return self.relation_schema[relation][feature]
+    def get_relation_attributes(self, relation): 
+        return list(self.relation_schema[relation].keys())
+    
+    def get_type(self, relation, attribute): 
+        return self.relation_schema[relation][attribute]
 
     def get_joins(self):
         return self.joins
@@ -58,7 +63,7 @@ class JoinGraph:
         if len(seen) != len(self.joins):
             raise JoinGraphException("The join graph is disjoint!")
     
-    # add relation, attributes and target variable to join graph
+    # add relation and attributes to join graph
     def add_relation(self,
                      relation: str,
                      attrs: list = [],
@@ -66,6 +71,7 @@ class JoinGraph:
         
         self.exe.add_table(relation, relation_address)
         self.joins[relation] = dict()
+        
         if relation not in self.relation_schema:
             self.relation_schema[relation] = {}
 
@@ -78,6 +84,7 @@ class JoinGraph:
     def get_join_keys(self, f_table: str, t_table: str = None):
         if f_table not in self.joins:
             return []
+        
         if t_table:
             if t_table not in self.joins[f_table]:
                 raise JoinGraphException(t_table, 'not connected to', f_table)
@@ -91,9 +98,8 @@ class JoinGraph:
     
     # useful attributes are join keys
     def get_useful_attributes(self, table):
-        # useful_attributes = self.get_relation_features(table) + \
-        #                     self.get_join_keys(table)
-        useful_attributes = self.get_join_keys(table)
+        useful_attributes = self.get_relation_attributes(table) + \
+                            self.get_join_keys(table)
         return list(set(useful_attributes))
 
     def add_join(self, table_name_left: str, table_name_right: str, left_keys: list, right_keys: list):
@@ -139,8 +145,9 @@ class JoinGraph:
     def check_features_exist(self, table, features):
         attributes = self.exe.get_schema(table)
         if not set(features).issubset(set(attributes)):
-            raise JoinGraphException('Key error in ' + str(features) + '. Attribute does not exist in table ' \
-                            + table + ' with schema ' + str(attributes))
+            raise JoinGraphException('Key error in ' + str(features) \
+                                     + '. Attribute does not exist in table ' \
+                                     + table + ' with schema ' + str(attributes))
 
     # output html that displays the join graph. Taken from JoinExplorer notebook
     def _repr_html_(self):

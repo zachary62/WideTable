@@ -75,15 +75,15 @@ def parse_ann(annotations: dict, prepend_relation=False):
                 _tmp = ["'" + str(ele) + "'" for ele in ann[2]]
                 select_conds.append(attr + ' not in (' + ','.join(_tmp) + ')')
             elif ann[1].value == Annotation.NOT_DISTINCT.value:
-                select_conds.append(attr + " == '" + str(ann[2]) + "'")
+                select_conds.append(attr + " IS NOT DISTINCT FROM '" + str(ann[2]) + "'")
             elif ann[1].value == Annotation.DISTINCT.value:
-                select_conds.append(attr + " != '" + str(ann[2]) + "'")
+                select_conds.append(attr + " IS DISTINCT FROM '" + str(ann[2]) + "'")
             elif ann[1] == Annotation.NOT_GREATER:
                 select_conds.append(attr + ' <= ' + str(ann[2]))
             elif ann[1] == Annotation.GREATER:
                 select_conds.append(attr + ' > ' + str(ann[2]))
             elif ann[1] == Annotation.NULL:
-                select_conds.append(attr + ' != ' + attr)
+                select_conds.append(attr + ' IS NULL')
             elif ann[1] == Annotation.NOT_NULL:
-                select_conds.append(attr + ' == ' + attr)
+                select_conds.append(attr + ' IS NOT NULL')
     return select_conds
