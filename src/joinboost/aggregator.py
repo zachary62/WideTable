@@ -2,7 +2,7 @@ from enum import Enum
 
 # TODO: make aggregator class (like operator in database), so we can do simple composition and optimization
 Aggregator = Enum('Aggregator', 'SUM MAX MIN SUB SUM_PROD DISTRIBUTED_SUM_PROD PROD DIV COUNT DISTINCT_COUNT IDENTITY')
-Annotation = Enum('NULL', 'NULL NOT_NULL NOT_GREATER GREATER DISTINCT NOT_DISTINCT IN NOT_IN')
+Annotation = Enum('Annotation', 'NULL NOT_NULL NOT_GREATER GREATER DISTINCT NOT_DISTINCT IN NOT_IN')
 Message = Enum('Message', 'IDENTITY SELECTION FULL UNDECIDED')
 
 
@@ -74,9 +74,9 @@ def parse_ann(annotations: dict, prepend_relation=False):
                 assert isinstance(ann[2], list)
                 _tmp = ["'" + str(ele) + "'" for ele in ann[2]]
                 select_conds.append(attr + ' not in (' + ','.join(_tmp) + ')')
-            elif ann[1] == Annotation.NOT_DISTINCT:
+            elif ann[1].value == Annotation.NOT_DISTINCT.value:
                 select_conds.append(attr + " == '" + str(ann[2]) + "'")
-            elif ann[1] == Annotation.DISTINCT:
+            elif ann[1].value == Annotation.DISTINCT.value:
                 select_conds.append(attr + " != '" + str(ann[2]) + "'")
             elif ann[1] == Annotation.NOT_GREATER:
                 select_conds.append(attr + ' <= ' + str(ann[2]))
