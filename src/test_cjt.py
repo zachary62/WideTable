@@ -151,6 +151,21 @@ class TestCJT(unittest.TestCase):
         actual = cjt.absorption('T', ['B','E'], ['B','E'], mode=3)
         self.assertEqual(actual, expected)
 
+    def test_many_to_many_with_groupby(self):
+        cjt = self.initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='T', attr='F'))
+        expected = cjt.exe.conn.execute(
+            """
+            SELECT SUM(T.F), count(*), T.B, S.E
+            FROM R join T on R.B = T.B join S on S.B = T.B 
+            GROUP BY T.B, S.E ORDER BY T.B, E
+            """
+        ).fetchall()
+        cjt.add_groupbys('S', 'E')
+        cjt.lift_all()
+        cjt.calibration()
+        actual = cjt.absorption('T', ['B','E'], ['B','E'], mode=3)
+        self.assertEqual(actual, expected)
+
 
 if __name__ == '__main__':
     unittest.main()
