@@ -61,7 +61,7 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     """
     Tests if message passing works in one to many join graph. 
@@ -83,7 +83,7 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     """
     Tests if message passing works in one to many join graph with selection.
@@ -108,7 +108,7 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     """
     Tests if message passing works in many to many join graph.
@@ -133,8 +133,8 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
-        self.assertEqual(actual, expected)
-        
+        self.assertEqual(expected, actual)
+
     # TODO: add more tests for group-by
     def test_one_to_many_with_groupby(self):
         cjt = self.initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(relation='T', attr='K'))
@@ -149,7 +149,7 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B','E'], ['B','E'], mode=3)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     def test_many_to_many_with_groupby(self):
         cjt = self.initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='T', attr='F'))
@@ -164,7 +164,7 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B','E'], ['B','E'], mode=3)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     def test_many_to_many_for_count_semiring(self):
         cjt = self.initialize_synthetic_many_to_many(semi_ring=CountSemiRing())
@@ -178,7 +178,7 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'],['B'], mode=3)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     def test_many_to_many_for_sum_semiring(self):
         cjt = self.initialize_synthetic_many_to_many(semi_ring=SumSemiRing(relation='T', attr='F'))

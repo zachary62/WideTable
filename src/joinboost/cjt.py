@@ -166,7 +166,7 @@ class CJT(JoinGraph):
         incoming_messages, join_conds = self._get_income_messages(table)
 
         from_relations = [m['message'] for m in incoming_messages] + [table]
-        aggregate_expressions = self.semi_ring.col_product_sum(from_relations)
+        aggregate_expressions = self.semi_ring.compute_col_operations(from_relations)
         
         # TODO: this is ugly. Refactor the codes
         group_by_query = []
@@ -247,7 +247,7 @@ class CJT(JoinGraph):
                     + from_group_bys
         
         # compute aggregation
-        aggregation = (self.semi_ring.col_product_sum(relations=from_relations) 
+        aggregation = (self.semi_ring.compute_col_operations(relations=from_relations)
                        if m_type == Message.FULL else {})
         
         # TODO: this is ugly! fix it such that "for attr in group_by" works
