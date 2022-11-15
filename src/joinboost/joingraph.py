@@ -9,31 +9,34 @@ class JoinGraphException(Exception):
     pass
 
 class JoinGraph:
-    def __init__(self, 
-                exe = None, 
-                joins = {}, 
+    def __init__(self,
+                exe = None,
+                joins = {},
                 relation_schema = {}):
-        
+
         self.exe = ExecutorFactory(exe)
         # maps each from_relation => to_relation => 
         # {keys: (from_keys, to_keys), message_type: "", message: name, ...}
         self.joins = copy.deepcopy(joins)
-        
+
+        # from_relation => to_relation => "M_to_O"/"O_to_M"/"M_to_M"/"O_to_O"
+        self.cardinality = copy.deepcopy(joins)
+
         # maps each relation => attribute => feature_type
         self.relation_schema = copy.deepcopy(relation_schema)
-        
+
         # some magic/random number used for jupyter notebook display
         self.session_id = int(time.time())
-        
+
         self.rep_template = data = pkgutil.get_data(__name__, "d3graph.html").decode('utf-8')
-    
-    def get_relations(self): 
+
+    def get_relations(self):
         return list(self.relation_schema.keys())
-    
-    def get_relation_schema(self): 
+
+    def get_relation_schema(self):
         return self.relation_schema
-    
-    def get_relation_attributes(self, relation): 
+
+    def get_relation_attributes(self, relation):
         return list(self.relation_schema[relation].keys())
     
     def get_type(self, relation, attribute): 
@@ -41,37 +44,38 @@ class JoinGraph:
 
     def get_joins(self):
         return self.joins
-    
+
     def check_acyclic(self):
         seen = set()
-        
+
         def dfs(cur_table, parent=None):
             seen.add(cur_table)
             for neighbour in self.joins[cur_table]:
-                if neighbour != parent: 
+                if neighbour != parent:
                     if neighbour in seen:
                         return False
                     else:
                         dfs(neighbour, cur_table)
             return True
-        
+
         # check acyclic
         if not dfs(list(self.joins.keys())[0]):
             raise JoinGraphException("The join graph is cyclic!")
-        
+
         # check not disjoint
         if len(seen) != len(self.joins):
             raise JoinGraphException("The join graph is disjoint!")
-    
+
     # add relation and attributes to join graph
     def add_relation(self,
                      relation: str,
                      attrs: list = [],
                      relation_address = None):
-        
+
         self.exe.add_table(relation, relation_address)
         self.joins[relation] = dict()
-        
+        self.cardinality[relation] = dict()
+
         if relation not in self.relation_schema:
             self.relation_schema[relation] = {}
 
@@ -84,7 +88,7 @@ class JoinGraph:
     def get_join_keys(self, f_table: str, t_table: str = None):
         if f_table not in self.joins:
             return []
-        
+
         if t_table:
             if t_table not in self.joins[f_table]:
                 raise JoinGraphException(t_table, 'not connected to', f_table)
@@ -95,7 +99,7 @@ class JoinGraph:
                 l_keys, _ = self.joins[f_table][table]["keys"]
                 keys = keys.union(set(l_keys))
             return list(keys)
-    
+
     # useful attributes are join keys
     def get_useful_attributes(self, table):
         useful_attributes = self.get_relation_attributes(table) + \
@@ -115,7 +119,55 @@ class JoinGraph:
 
         self.joins[table_name_left][table_name_right] = {"keys": (left_keys, right_keys)}
         self.joins[table_name_right][table_name_left] = {"keys": (right_keys, left_keys)}
-        
+        self.determine_cardinality(table_name_left, left_keys, table_name_right, right_keys)
+
+    def determine_cardinality(self, table_name_left :str, leftKeys: list,
+                              table_name_right:str, rightKeys: list):
+        rcount = self.execute_cardinality_query(table_name_left,leftKeys,
+                                                table_name_right,rightKeys)
+        lcount = self.execute_cardinality_query(table_name_right, rightKeys,
+                                                table_name_left, leftKeys)
+
+        if lcount > 1 and rcount > 1:
+            self.cardinality[table_name_left][table_name_right] = "M_to_M"
+            self.cardinality[table_name_right][table_name_left] = "M_to_M"
+        elif lcount == 0 or rcount == 0:
+            # should set UNKNOWN in cardinality map? cross product?
+            print("UNKNOWN")
+        elif lcount==1 and rcount == 1:
+            self.cardinality[table_name_left][table_name_right] = "O_to_O"
+            self.cardinality[table_name_right][table_name_left] = "O_to_O"
+        elif lcount > 1 and rcount == 1:
+            self.cardinality[table_name_left][table_name_right] = "M_to_O"
+            self.cardinality[table_name_right][table_name_left] = "O_to_M"
+        elif rcount > 1 and lcount == 1:
+            self.cardinality[table_name_left][table_name_right] = "O_to_M"
+            self.cardinality[table_name_right][table_name_left] = "M_to_O"
+
+    def execute_cardinality_query(self, ltable, lkeys, rtable, rkeys):
+        agg_exp = {}
+        for lkey in lkeys:
+            agg_exp[lkey] = (f'{ltable}.{lkey}', Aggregator.IDENTITY)
+        join_conds=[ltable + "." + lkeys[i] + " IS NOT DISTINCT FROM " +
+         rtable + "." + rkeys[i] for i in range(len(lkeys))]
+        left_distinct_table = self.exe.execute_spja_query(aggregate_expressions=agg_exp,
+                                                          from_tables=[ltable],
+                                                          group_by=lkeys,
+                                                          table_name=ltable,
+                                                          mode=4)
+
+        agg_exp['count'] = (','.join([f'{rtable}.{rkey}' for rkey in rkeys]), Aggregator.COUNT)
+        res=self.exe.execute_spja_query(from_tables=[left_distinct_table + f'as {ltable}', rtable],
+                                        group_by=[f'{ltable}.{lkey}' for lkey in lkeys],
+                                        select_conds=join_conds,
+                                        aggregate_expressions=agg_exp,
+                                        mode=3
+                                        )
+        max_count = 0
+        for t in res:
+            max_count = max(t[1], max_count)
+        return max_count
+
     def replace(self, table_prev, table_after):
         if table_prev not in self.relation_schema:
             raise JoinGraphException(table_prev + ' doesn\'t exit!')
@@ -128,11 +180,11 @@ class JoinGraph:
             if table_prev in self.joins[relation]:
                 self.joins[relation][table_after] = self.joins[relation][table_prev]
                 del self.joins[relation][table_prev]
-        
+
         if table_prev in self.joins:
             self.joins[table_after] = self.joins[table_prev]
             del self.joins[table_prev]
-        
+
     def _preprocess(self):
         # self.check_all_features_exist()
         self.check_acyclic()
@@ -141,7 +193,7 @@ class JoinGraph:
         for table in self.relation_schema:
             features = self.relation_schema[table].keys()
             self.check_features_exist(table, features)
-        
+
     def check_features_exist(self, table, features):
         attributes = self.exe.get_schema(table)
         if not set(features).issubset(set(attributes)):
