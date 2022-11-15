@@ -4,15 +4,17 @@ from .aggregator import Aggregator, Message
 from .joingraph import JoinGraph
 
 '''Handle semi ring in DBMS'''
+
+
 class SemiRing(ABC):
     type: str
 
     def __init__(self):
         pass
-        
+
     def __add__(self, other):
         pass
-    
+
     def __sub__(self, other):
         pass
 
@@ -34,8 +36,18 @@ class SumSemiRing(SemiRing):
         self.relation = relation
         self.attr = attr
 
-    def lift_exp(self, s_after='s'):
-        return {s_after: (f'"{self.relation}"."{self.attr}"', Aggregator.IDENTITY)}
+    def lift_exp(self, s_after='s', relation=""):
+        if relation == self.relation:
+            return {s_after: (self.attr, Aggregator.IDENTITY)}
+        else:
+            return {s_after: ("1", Aggregator.IDENTITY)}
+
+    def col_product_sum(self, relations=[], s='s', s_after='s'):
+        sum_join_calculation = {}
+        for i, relation in enumerate(relations):
+            sum_join_calculation[f'"{relation}"'] = f'"{s}"'
+
+        return {s_after: (sum_join_calculation, Aggregator.SUM_PROD)}
 
 
 class CountSemiRing(SemiRing):
@@ -43,8 +55,14 @@ class CountSemiRing(SemiRing):
     def __init__(self):
         pass
 
-    def lift_exp(self, c_after='c'):
-        return {c_after: (f'"{self.relation}"."{self.attr}"', Aggregator.IDENTITY)}
+    def lift_exp(self, relation="", c_after='c'):
+        return {c_after: ('1', Aggregator.IDENTITY)}
+
+    def col_product_sum(self, relations=[], c='c', c_after='c'):
+        annotated_count = {}
+        for i, relation in enumerate(relations):
+            annotated_count[f'"{relation}"'] = f'"{c}"'
+        return {c_after: (annotated_count, Aggregator.SUM_PROD)}
 
 
 class AvgSemiRing(SemiRing):
@@ -80,7 +98,8 @@ class AvgSemiRing(SemiRing):
 
     def get_value(self):
         return self.r_pair
-    
+
+
 # check if expression has all identity aggregator
 def all_identity(expression):
     for key in expression:

@@ -163,7 +163,6 @@ class CJT(JoinGraph):
                 self._pre_dfs(c_neighbor, currento_table, m_type=m_type)
 
     def absorption(self, table: str, group_by: list, order_by = [], mode=4):
-        # from_table_attrs = self.get_relation_features(table)
         incoming_messages, join_conds = self._get_income_messages(table)
 
         from_relations = [m['message'] for m in incoming_messages] + [table]

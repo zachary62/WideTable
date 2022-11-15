@@ -4,7 +4,7 @@ import duckdb
 
 from joinboost.cjt import CJT
 from joinboost.joingraph import JoinGraph
-from joinboost.semiring import AvgSemiRing
+from joinboost.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
 from joinboost.aggregator import Annotation
 
 
@@ -166,6 +166,33 @@ class TestCJT(unittest.TestCase):
         actual = cjt.absorption('T', ['B','E'], ['B','E'], mode=3)
         self.assertEqual(actual, expected)
 
+    def test_many_to_many_for_count_semiring(self):
+        cjt = self.initialize_synthetic_many_to_many(semi_ring=CountSemiRing())
+        expected = cjt.exe.conn.execute(
+            """
+            SELECT count(*), T.B
+            FROM R join T on R.B = T.B join S on S.B = T.B 
+            GROUP BY T.B ORDER BY T.B
+            """
+        ).fetchall()
+        cjt.lift_all()
+        cjt.calibration()
+        actual = cjt.absorption('T', ['B'],['B'], mode=3)
+        self.assertEqual(actual, expected)
+
+    def test_many_to_many_for_sum_semiring(self):
+        cjt = self.initialize_synthetic_many_to_many(semi_ring=SumSemiRing(relation='T', attr='F'))
+        expected = cjt.exe.conn.execute(
+            """
+            SELECT sum(T.F), T.B
+            FROM R join T on R.B = T.B join S on S.B = T.B 
+            GROUP BY T.B ORDER BY T.B
+            """
+        ).fetchall()
+        cjt.lift_all()
+        cjt.calibration()
+        actual = cjt.absorption('T', ['B'],['B'], mode=3)
+        self.assertEqual(expected, actual)
 
 if __name__ == '__main__':
     unittest.main()
