@@ -21,6 +21,7 @@ class JoinGraph:
 
         # from_relation => to_relation => "M_to_O"/"O_to_M"/"M_to_M"/"O_to_O"
         self.cardinality = copy.deepcopy(joins)
+        self.missing_keys = copy.deepcopy(joins)
 
         # maps each relation => attribute => feature_type
         self.relation_schema = copy.deepcopy(relation_schema)
@@ -75,6 +76,7 @@ class JoinGraph:
         self.exe.add_table(relation, relation_address)
         self.joins[relation] = dict()
         self.cardinality[relation] = dict()
+        self.missing_keys[relation] = dict()
 
         if relation not in self.relation_schema:
             self.relation_schema[relation] = {}
@@ -123,17 +125,28 @@ class JoinGraph:
 
     def determine_cardinality(self, table_name_left :str, leftKeys: list,
                               table_name_right:str, rightKeys: list):
-        max_rcount = self.execute_cardinality_query(table_name_left,leftKeys,
-                                                table_name_right,rightKeys)
-        max_lcount = self.execute_cardinality_query(table_name_right, rightKeys,
-                                                table_name_left, leftKeys)
+
+        #TODO: move to executor
+        resA = self.exe._execute_query(f'(SELECT {",".join(leftKeys)} FROM {table_name_left} ORDER BY {",".join(leftKeys)}) '
+                                       f'EXCEPT (SELECT {",".join(rightKeys)} FROM {table_name_right} ORDER BY {",".join(rightKeys)})')
+        resB = self.exe._execute_query(f'(SELECT {",".join(rightKeys)} FROM {table_name_right} ORDER BY {",".join(rightKeys)}) '
+                                       f'EXCEPT (SELECT {",".join(leftKeys)} FROM {table_name_left} ORDER BY {",".join(leftKeys)})')
+
+        # if result is not empty that means some key values are missing from the other relation
+        if resA is not None:
+            self.missing_keys[table_name_right][table_name_left] = "MISSING"
+        if resB is not None:
+            self.missing_keys[table_name_left][table_name_right] = "MISSING"
+
+        max_lcount = self.execute_cardinality_query(table_name_left, leftKeys)
+        max_rcount = self.execute_cardinality_query(table_name_right, rightKeys)
 
         if max_lcount > 1 and max_rcount > 1:
             self.cardinality[table_name_left][table_name_right] = "M_to_M"
             self.cardinality[table_name_right][table_name_left] = "M_to_M"
         elif max_lcount == 0 or max_rcount == 0:
-            self.cardinality[table_name_left][table_name_right] = "MISSING"
-            self.cardinality[table_name_right][table_name_left] = "MISSING"
+            self.cardinality[table_name_left][table_name_right] = "UNKNOWN"
+            self.cardinality[table_name_right][table_name_left] = "UNKNOWN"
         elif max_lcount == 1 and max_rcount == 1:
             self.cardinality[table_name_left][table_name_right] = "O_to_O"
             self.cardinality[table_name_right][table_name_left] = "O_to_O"
@@ -144,29 +157,21 @@ class JoinGraph:
             self.cardinality[table_name_left][table_name_right] = "O_to_M"
             self.cardinality[table_name_right][table_name_left] = "M_to_O"
 
-    def execute_cardinality_query(self, ltable, lkeys, rtable, rkeys):
+    def execute_cardinality_query(self, table, keys):
         agg_exp = {}
-        for lkey in lkeys:
-            agg_exp[lkey] = (f'{ltable}.{lkey}', Aggregator.IDENTITY)
-        join_conds=[ltable + "." + lkeys[i] + " IS NOT DISTINCT FROM " +
-         rtable + "." + rkeys[i] for i in range(len(lkeys))]
+        agg_exp['count'] = ('*',  Aggregator.COUNT)
         left_distinct_table = self.exe.execute_spja_query(aggregate_expressions=agg_exp,
-                                                          from_tables=[ltable],
-                                                          group_by=lkeys,
-                                                          table_name=ltable,
+                                                          from_tables=[table],
+                                                          group_by=keys,
+                                                          table_name=table,
                                                           mode=4)
 
-        agg_exp['count'] = (','.join([f'{rtable}.{rkey}' for rkey in rkeys]), Aggregator.COUNT)
-        res=self.exe.execute_spja_query(from_tables=[left_distinct_table + f'as {ltable}', rtable],
-                                        group_by=[f'{ltable}.{lkey}' for lkey in lkeys],
-                                        select_conds=join_conds,
+        agg_exp = {}
+        agg_exp['max_count'] = ('count', Aggregator.MAX)
+        res=self.exe.execute_spja_query(from_tables=[left_distinct_table + f' as {table}'],
                                         aggregate_expressions=agg_exp,
-                                        mode=3
-                                        )
-        max_count = 0
-        for t in res:
-            max_count = max(t[1], max_count)
-        return max_count
+                                        mode=3)
+        return res[0][0]
 
     def replace(self, table_prev, table_after):
         if table_prev not in self.relation_schema:
