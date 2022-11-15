@@ -216,5 +216,7 @@ class TestCJT(unittest.TestCase):
         self.assertEqual(cjt.cardinality['S']['T'], 'M_to_O')
         self.assertEqual(cjt.cardinality['T']['S'], 'O_to_M')
 
+    # TODO add test for missing case
+
 if __name__ == '__main__':
     unittest.main()

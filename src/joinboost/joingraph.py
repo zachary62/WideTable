@@ -132,9 +132,9 @@ class JoinGraph:
             self.cardinality[table_name_left][table_name_right] = "M_to_M"
             self.cardinality[table_name_right][table_name_left] = "M_to_M"
         elif lcount == 0 or rcount == 0:
-            # should set UNKNOWN in cardinality map? cross product?
-            print("UNKNOWN")
-        elif lcount==1 and rcount == 1:
+            self.cardinality[table_name_left][table_name_right] = "MISSING"
+            self.cardinality[table_name_right][table_name_left] = "MISSING"
+        elif lcount == 1 and rcount == 1:
             self.cardinality[table_name_left][table_name_right] = "O_to_O"
             self.cardinality[table_name_right][table_name_left] = "O_to_O"
         elif lcount > 1 and rcount == 1:
