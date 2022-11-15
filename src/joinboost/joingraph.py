@@ -123,24 +123,24 @@ class JoinGraph:
 
     def determine_cardinality(self, table_name_left :str, leftKeys: list,
                               table_name_right:str, rightKeys: list):
-        rcount = self.execute_cardinality_query(table_name_left,leftKeys,
+        max_rcount = self.execute_cardinality_query(table_name_left,leftKeys,
                                                 table_name_right,rightKeys)
-        lcount = self.execute_cardinality_query(table_name_right, rightKeys,
+        max_lcount = self.execute_cardinality_query(table_name_right, rightKeys,
                                                 table_name_left, leftKeys)
 
-        if lcount > 1 and rcount > 1:
+        if max_lcount > 1 and max_rcount > 1:
             self.cardinality[table_name_left][table_name_right] = "M_to_M"
             self.cardinality[table_name_right][table_name_left] = "M_to_M"
-        elif lcount == 0 or rcount == 0:
+        elif max_lcount == 0 or max_rcount == 0:
             self.cardinality[table_name_left][table_name_right] = "MISSING"
             self.cardinality[table_name_right][table_name_left] = "MISSING"
-        elif lcount == 1 and rcount == 1:
+        elif max_lcount == 1 and max_rcount == 1:
             self.cardinality[table_name_left][table_name_right] = "O_to_O"
             self.cardinality[table_name_right][table_name_left] = "O_to_O"
-        elif lcount > 1 and rcount == 1:
+        elif max_lcount > 1 and max_rcount == 1:
             self.cardinality[table_name_left][table_name_right] = "M_to_O"
             self.cardinality[table_name_right][table_name_left] = "O_to_M"
-        elif rcount > 1 and lcount == 1:
+        elif max_rcount > 1 and max_lcount == 1:
             self.cardinality[table_name_left][table_name_right] = "O_to_M"
             self.cardinality[table_name_right][table_name_left] = "M_to_O"
 
