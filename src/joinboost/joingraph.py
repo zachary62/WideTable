@@ -127,35 +127,22 @@ class JoinGraph:
                               table_name_right:str, rightKeys: list):
 
         #TODO: move to executor
-        resA = self.exe._execute_query(f'(SELECT {",".join(leftKeys)} FROM {table_name_left} ORDER BY {",".join(leftKeys)}) '
-                                       f'EXCEPT (SELECT {",".join(rightKeys)} FROM {table_name_right} ORDER BY {",".join(rightKeys)})')
-        resB = self.exe._execute_query(f'(SELECT {",".join(rightKeys)} FROM {table_name_right} ORDER BY {",".join(rightKeys)}) '
-                                       f'EXCEPT (SELECT {",".join(leftKeys)} FROM {table_name_left} ORDER BY {",".join(leftKeys)})')
+        q1 = self.exe.execute_spja_query(aggregate_expressions={",".join(leftKeys): (",".join(leftKeys), Aggregator.IDENTITY)},
+                                    order_by=leftKeys, from_tables=[table_name_left], mode=4)
+        q2 = self.exe.execute_spja_query(aggregate_expressions={",".join(rightKeys): (",".join(rightKeys), Aggregator.IDENTITY)},
+                                         order_by=rightKeys, from_tables=[table_name_right], mode=4)
+
+        resA = self.exe.execute_set_operation_query("EXCEPT", q1, q2)
+        resB = self.exe.execute_set_operation_query("EXCEPT", q2, q1)
 
         # if result is not empty that means some key values are missing from the other relation
-        if resA is not None:
+        if len(resA) > 0:
             self.missing_keys[table_name_right][table_name_left] = "MISSING"
-        if resB is not None:
+        if len(resB) > 0:
             self.missing_keys[table_name_left][table_name_right] = "MISSING"
 
-        max_lcount = self.execute_cardinality_query(table_name_left, leftKeys)
-        max_rcount = self.execute_cardinality_query(table_name_right, rightKeys)
-
-        if max_lcount > 1 and max_rcount > 1:
-            self.cardinality[table_name_left][table_name_right] = "M_to_M"
-            self.cardinality[table_name_right][table_name_left] = "M_to_M"
-        elif max_lcount == 0 or max_rcount == 0:
-            self.cardinality[table_name_left][table_name_right] = "UNKNOWN"
-            self.cardinality[table_name_right][table_name_left] = "UNKNOWN"
-        elif max_lcount == 1 and max_rcount == 1:
-            self.cardinality[table_name_left][table_name_right] = "O_to_O"
-            self.cardinality[table_name_right][table_name_left] = "O_to_O"
-        elif max_lcount > 1 and max_rcount == 1:
-            self.cardinality[table_name_left][table_name_right] = "M_to_O"
-            self.cardinality[table_name_right][table_name_left] = "O_to_M"
-        elif max_rcount > 1 and max_lcount == 1:
-            self.cardinality[table_name_left][table_name_right] = "O_to_M"
-            self.cardinality[table_name_right][table_name_left] = "M_to_O"
+        self.cardinality[table_name_left][table_name_right] = self.execute_cardinality_query(table_name_left, leftKeys)
+        self.cardinality[table_name_right][table_name_left] = self.execute_cardinality_query(table_name_right, rightKeys)
 
     def execute_cardinality_query(self, table, keys):
         agg_exp = {}
@@ -175,9 +162,9 @@ class JoinGraph:
 
     def replace(self, table_prev, table_after):
         if table_prev not in self.relation_schema:
-            raise JoinGraphException(table_prev + ' doesn\'t exit!')
+            raise JoinGraphException(table_prev + ' doesn\'t exist!')
         if table_after in self.relation_schema:
-            raise JoinGraphException(table_after + ' already exits!')
+            raise JoinGraphException(table_after + ' already exists!')
         self.relation_schema[table_after] = self.relation_schema[table_prev]
         del self.relation_schema[table_prev]
 

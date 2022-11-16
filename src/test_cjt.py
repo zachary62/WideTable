@@ -203,20 +203,31 @@ class TestCJT(unittest.TestCase):
     def test_cardinality_for_many_to_many(self):
         cjt = self.initialize_synthetic_many_to_many()
 
-        self.assertEqual(cjt.cardinality['R']['S'], 'M_to_M')
-        self.assertEqual(cjt.cardinality['S']['R'], 'M_to_M')
-        self.assertEqual(cjt.cardinality['S']['T'], 'M_to_M')
-        self.assertEqual(cjt.cardinality['T']['S'], 'M_to_M')
+        self.assertGreater(cjt.cardinality['R']['S'], 1)
+        self.assertGreater(cjt.cardinality['S']['R'], 1)
+        self.assertGreater(cjt.cardinality['S']['T'], 1)
+        self.assertGreater(cjt.cardinality['T']['S'], 1)
+
+        self.assertEqual(cjt.missing_keys['S']['R'], "MISSING")
+        self.assertNotIn('S', cjt.missing_keys['R'])
+
+        self.assertNotIn('R', cjt.missing_keys['T'])
+        self.assertNotIn('T', cjt.missing_keys['R'])
 
     def test_cardinality_for_one_to_many(self):
         cjt = self.initialize_synthetic_one_to_many()
 
-        self.assertEqual(cjt.cardinality['R']['T'], 'M_to_O')
-        self.assertEqual(cjt.cardinality['T']['R'], 'O_to_M')
-        self.assertEqual(cjt.cardinality['S']['T'], 'M_to_O')
-        self.assertEqual(cjt.cardinality['T']['S'], 'O_to_M')
+        self.assertGreater(cjt.cardinality['R']['T'], 1)
+        self.assertEqual(cjt.cardinality['T']['R'], 1)
+        self.assertGreater(cjt.cardinality['S']['T'], 1)
+        self.assertEqual(cjt.cardinality['T']['S'], 1)
 
-    # TODO add test for missing case
+        self.assertEqual(cjt.missing_keys['S']['T'], "MISSING")
+        self.assertNotIn('S', cjt.missing_keys['T'])
+
+        self.assertNotIn('R', cjt.missing_keys['T'])
+        self.assertNotIn('T', cjt.missing_keys['R'])
+
 
 if __name__ == '__main__':
     unittest.main()
