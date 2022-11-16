@@ -4,7 +4,7 @@ import duckdb
 
 from joinboost.cjt import CJT
 from joinboost.joingraph import JoinGraph
-from joinboost.semiring import AvgSemiRing
+from joinboost.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
 from joinboost.aggregator import Annotation
 
 
@@ -13,15 +13,16 @@ class TestCJT(unittest.TestCase):
     Join Graph for data/synthetic-many-to-many/
     S(BE) - T(BF) - R(ABDH) 
     """
+
     def initialize_synthetic_many_to_many(self, semi_ring=AvgSemiRing()):
         duck_db_conn = duckdb.connect(database=':memory:')
         join_graph = JoinGraph(duck_db_conn)
         cjt = CJT(semi_ring=semi_ring, join_graph=join_graph)
-        cjt.add_relation('R', attrs=["D","H"], 
+        cjt.add_relation('R', attrs=["D", "H"],
                          relation_address='../data/synthetic-many-to-many/R.csv')
-        cjt.add_relation('S', attrs=["E"], 
+        cjt.add_relation('S', attrs=["E"],
                          relation_address='../data/synthetic-many-to-many/S.csv')
-        cjt.add_relation('T', attrs=["F"], 
+        cjt.add_relation('T', attrs=["F"],
                          relation_address='../data/synthetic-many-to-many/T.csv')
         cjt.add_join('R', 'S', ['B'], ['B']);
         cjt.add_join('S', 'T', ['B'], ['B']);
@@ -31,6 +32,7 @@ class TestCJT(unittest.TestCase):
     Join Graph for data/synthetic-one_to_many/
     R(ABDH) - T(BFK) - S(FE)
     """
+
     def initialize_synthetic_one_to_many(self, semi_ring=AvgSemiRing()):
         duck_db_conn = duckdb.connect(database=':memory:')
         join_graph = JoinGraph(duck_db_conn)
@@ -50,6 +52,7 @@ class TestCJT(unittest.TestCase):
         FROM R join G on R.B = G.B join T on R.B = T.B
         GROUP BY R.B ORDER BY R.B
     """
+
     def test_many_to_many(self):
         cjt = self.initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='R', attr='A'))
         expected = cjt.exe.conn.execute(
@@ -61,7 +64,7 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     """
     Tests if message passing works in one to many join graph. 
@@ -71,6 +74,7 @@ class TestCJT(unittest.TestCase):
         FROM R join T on R.B = T.B join S on S.F = T.F 
         GROUP BY T.B ORDER BY T.B
     """
+
     def test_one_to_many(self):
         cjt = self.initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(relation='T', attr='K'))
         expected = cjt.exe.conn.execute(
@@ -83,7 +87,7 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     """
     Tests if message passing works in one to many join graph with selection.
@@ -94,6 +98,7 @@ class TestCJT(unittest.TestCase):
         WHERE S.E = 2
         GROUP BY T.B ORDER BY T.B
     """
+
     def test_one_to_many_with_selection(self):
         cjt = self.initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(relation='T', attr='K'))
         expected = cjt.exe.conn.execute(
@@ -108,7 +113,7 @@ class TestCJT(unittest.TestCase):
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
-        self.assertEqual(actual, expected)
+        self.assertEqual(expected, actual)
 
     """
     Tests if message passing works in many to many join graph.
@@ -119,6 +124,7 @@ class TestCJT(unittest.TestCase):
         WHERE G.B = 2
         GROUP BY R.B ORDER BY R.B
     """
+
     def test_many_to_many_with_selection(self):
         cjt = self.initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='R', attr='A'))
         expected = cjt.exe.conn.execute(
@@ -128,13 +134,13 @@ class TestCJT(unittest.TestCase):
             WHERE S.B = 2
             GROUP BY R.B ORDER BY R.B
             """).fetchall()
-        
+
         cjt.add_annotations('S', ['B', Annotation.NOT_DISTINCT, '2'])
         cjt.lift_all()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
-        self.assertEqual(actual, expected)
-        
+        self.assertEqual(expected, actual)
+
     # TODO: add more tests for group-by
     def test_one_to_many_with_groupby(self):
         cjt = self.initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(relation='T', attr='K'))
@@ -148,8 +154,8 @@ class TestCJT(unittest.TestCase):
         cjt.add_groupbys('S', 'E')
         cjt.lift_all()
         cjt.calibration()
-        actual = cjt.absorption('T', ['B','E'], ['B','E'], mode=3)
-        self.assertEqual(actual, expected)
+        actual = cjt.absorption('T', ['B', 'E'], ['B', 'E'], mode=3)
+        self.assertEqual(expected, actual)
 
     def test_many_to_many_with_groupby(self):
         cjt = self.initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='T', attr='F'))
@@ -163,8 +169,64 @@ class TestCJT(unittest.TestCase):
         cjt.add_groupbys('S', 'E')
         cjt.lift_all()
         cjt.calibration()
-        actual = cjt.absorption('T', ['B','E'], ['B','E'], mode=3)
-        self.assertEqual(actual, expected)
+        actual = cjt.absorption('T', ['B', 'E'], ['B', 'E'], mode=3)
+        self.assertEqual(expected, actual)
+
+    def test_many_to_many_for_count_semiring(self):
+        cjt = self.initialize_synthetic_many_to_many(semi_ring=CountSemiRing())
+        expected = cjt.exe.conn.execute(
+            """
+            SELECT count(*), T.B
+            FROM R join T on R.B = T.B join S on S.B = T.B 
+            GROUP BY T.B ORDER BY T.B
+            """
+        ).fetchall()
+        cjt.lift_all()
+        cjt.calibration()
+        actual = cjt.absorption('T', ['B'], ['B'], mode=3)
+        self.assertEqual(expected, actual)
+
+    def test_many_to_many_for_sum_semiring(self):
+        cjt = self.initialize_synthetic_many_to_many(semi_ring=SumSemiRing(relation='T', attr='F'))
+        expected = cjt.exe.conn.execute(
+            """
+            SELECT sum(T.F), T.B
+            FROM R join T on R.B = T.B join S on S.B = T.B 
+            GROUP BY T.B ORDER BY T.B
+            """
+        ).fetchall()
+        cjt.lift_all()
+        cjt.calibration()
+        actual = cjt.absorption('T', ['B'], ['B'], mode=3)
+        self.assertEqual(expected, actual)
+
+    def test_cardinality_for_many_to_many(self):
+        cjt = self.initialize_synthetic_many_to_many()
+
+        self.assertGreater(cjt.cardinality['R']['S'], 1)
+        self.assertGreater(cjt.cardinality['S']['R'], 1)
+        self.assertGreater(cjt.cardinality['S']['T'], 1)
+        self.assertGreater(cjt.cardinality['T']['S'], 1)
+
+        self.assertEqual(cjt.missing_keys['S']['R'], "MISSING")
+        self.assertNotIn('S', cjt.missing_keys['R'])
+
+        self.assertNotIn('R', cjt.missing_keys['T'])
+        self.assertNotIn('T', cjt.missing_keys['R'])
+
+    def test_cardinality_for_one_to_many(self):
+        cjt = self.initialize_synthetic_one_to_many()
+
+        self.assertGreater(cjt.cardinality['R']['T'], 1)
+        self.assertEqual(cjt.cardinality['T']['R'], 1)
+        self.assertGreater(cjt.cardinality['S']['T'], 1)
+        self.assertEqual(cjt.cardinality['T']['S'], 1)
+
+        self.assertEqual(cjt.missing_keys['S']['T'], "MISSING")
+        self.assertNotIn('S', cjt.missing_keys['T'])
+
+        self.assertNotIn('R', cjt.missing_keys['T'])
+        self.assertNotIn('T', cjt.missing_keys['R'])
 
 
 if __name__ == '__main__':

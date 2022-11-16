@@ -39,6 +39,9 @@ def parse_agg(agg, para):
     elif agg == Aggregator.DIV:
         assert isinstance(para, tuple)
         return str(para[0]) + ' / ' + str(para[1])
+    elif agg == Aggregator.MAX:
+        assert isinstance(para, str)
+        return 'MAX(' + para + ')'
     else:
         raise Exception('Unsupported Semiring Expression')
         

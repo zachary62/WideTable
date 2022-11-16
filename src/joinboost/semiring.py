@@ -4,15 +4,17 @@ from .aggregator import Aggregator, Message
 from .joingraph import JoinGraph
 
 '''Handle semi ring in DBMS'''
+
+
 class SemiRing(ABC):
     type: str
 
     def __init__(self):
         pass
-        
+
     def __add__(self, other):
         pass
-    
+
     def __sub__(self, other):
         pass
 
@@ -28,14 +30,27 @@ class SemiRing(ABC):
     def get_sr_in_select(self, m_type: Message, f_table: str, in_msgs: list, f_table_attrs: list):
         pass
 
+    def compute_col_operations(self, relations=[], s_after='s', c_after='c', s='s', c='c'):
+        pass
+
 
 class SumSemiRing(SemiRing):
     def __init__(self, relation="", attr=""):
         self.relation = relation
         self.attr = attr
 
-    def lift_exp(self, s_after='s'):
-        return {s_after: (f'"{self.relation}"."{self.attr}"', Aggregator.IDENTITY)}
+    def lift_exp(self, s_after='s', relation=""):
+        if relation == self.relation:
+            return {s_after: (self.attr, Aggregator.IDENTITY)}
+        else:
+            return {s_after: ("1", Aggregator.IDENTITY)}
+
+    def compute_col_operations(self, relations=[], s='s', s_after='s'):
+        sum_join_calculation = {}
+        for i, relation in enumerate(relations):
+            sum_join_calculation[f'"{relation}"'] = f'"{s}"'
+
+        return {s_after: (sum_join_calculation, Aggregator.SUM_PROD)}
 
 
 class CountSemiRing(SemiRing):
@@ -43,8 +58,14 @@ class CountSemiRing(SemiRing):
     def __init__(self):
         pass
 
-    def lift_exp(self, c_after='c'):
-        return {c_after: (f'"{self.relation}"."{self.attr}"', Aggregator.IDENTITY)}
+    def lift_exp(self, relation="", c_after='c'):
+        return {c_after: ('1', Aggregator.IDENTITY)}
+
+    def compute_col_operations(self, relations=[], c='c', c_after='c'):
+        annotated_count = {}
+        for i, relation in enumerate(relations):
+            annotated_count[f'"{relation}"'] = f'"{c}"'
+        return {c_after: (annotated_count, Aggregator.SUM_PROD)}
 
 
 class AvgSemiRing(SemiRing):
@@ -66,7 +87,7 @@ class AvgSemiRing(SemiRing):
     def col_sum(self, s='s', c='c', s_after='s', c_after='c'):
         return {s_after: (s, Aggregator.SUM), c_after: (c, Aggregator.SUM)}
 
-    def col_product_sum(self, relations=[], s='s', c='c', s_after='s', c_after='c'):
+    def compute_col_operations(self, relations=[], s='s', c='c', s_after='s', c_after='c'):
 
         annotated_count = {}
         for i, relation in enumerate(relations):
@@ -80,7 +101,8 @@ class AvgSemiRing(SemiRing):
 
     def get_value(self):
         return self.r_pair
-    
+
+
 # check if expression has all identity aggregator
 def all_identity(expression):
     for key in expression:
