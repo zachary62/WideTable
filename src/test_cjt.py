@@ -173,7 +173,7 @@ class TestCJT(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_many_to_many_for_count_semiring(self):
-        cjt = self.initialize_synthetic_many_to_many(semi_ring=CountSemiRing())
+        cjt = self.initialize_synthetic_many_to_many(semi_ring=CountSemiRing(relation='T'))
         expected = cjt.exe.conn.execute(
             """
             SELECT count(*), T.B

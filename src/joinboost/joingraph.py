@@ -33,6 +33,9 @@ class JoinGraph:
 
     def get_relations(self):
         return list(self.relation_schema.keys())
+    
+    def has_relation(self, relation):
+        return (relation in self.relation_schema.keys())
 
     def get_relation_schema(self):
         return self.relation_schema
