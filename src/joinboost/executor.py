@@ -176,8 +176,8 @@ class DuckdbExecutor(Executor):
             sql += 'USING SAMPLE ' + str(sample_rate*100) + ' %\n'
         return sql
 
-    def execute_set_operation_query(self, operation, expr1, expr2):
-        return self._execute_query(f'{expr1} {operation} {expr2}')
+    def set_query(self, operation, expr1, expr2):
+        return f'({expr1} {operation} {expr2})'
 
     def _execute_query(self, q):
         start_time = time.time()

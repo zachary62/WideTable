@@ -13,30 +13,34 @@ class JoinGraph:
                 exe = None,
                 joins = {},
                 relation_schema = {}):
-
+        
         self.exe = ExecutorFactory(exe)
+        
         # maps each from_relation => to_relation => 
         # {keys: (from_keys, to_keys), message_type: "", message: name, ...}
         self.joins = copy.deepcopy(joins)
 
         # from_relation => to_relation => "M_to_O"/"O_to_M"/"M_to_M"/"O_to_O"
-        self.cardinality = copy.deepcopy(joins)
+        self.multiplicity = copy.deepcopy(joins)
         self.missing_keys = copy.deepcopy(joins)
 
-        # maps each relation => attribute => feature_type
+        # maps each relation => attribute => dimension attributes (may not include join keys)
         self.relation_schema = copy.deepcopy(relation_schema)
 
         # some magic/random number used for jupyter notebook display
         self.session_id = int(time.time())
-
+        
+        # template for jupyter notebook display
         self.rep_template = data = pkgutil.get_data(__name__, "d3graph.html").decode('utf-8')
-
+        
+    # return a list of relations in the join graph 
     def get_relations(self):
         return list(self.relation_schema.keys())
     
+    # return whether the relation is in the join graph 
     def has_relation(self, relation):
         return (relation in self.relation_schema.keys())
-
+    
     def get_relation_schema(self):
         return self.relation_schema
 
@@ -48,10 +52,11 @@ class JoinGraph:
 
     def get_joins(self):
         return self.joins
-
+    
+    # check if the join graph is acyclic and not disjoint
     def check_acyclic(self):
         seen = set()
-
+        
         def dfs(cur_table, parent=None):
             seen.add(cur_table)
             for neighbour in self.joins[cur_table]:
@@ -78,7 +83,7 @@ class JoinGraph:
 
         self.exe.add_table(relation, relation_address)
         self.joins[relation] = dict()
-        self.cardinality[relation] = dict()
+        self.multiplicity[relation] = dict()
         self.missing_keys[relation] = dict()
 
         if relation not in self.relation_schema:
@@ -105,7 +110,7 @@ class JoinGraph:
                 keys = keys.union(set(l_keys))
             return list(keys)
 
-    # useful attributes are join keys
+    # get the dimension attributes and the join keys
     def get_useful_attributes(self, table):
         useful_attributes = self.get_relation_attributes(table) + \
                             self.get_join_keys(table)
@@ -124,45 +129,68 @@ class JoinGraph:
 
         self.joins[table_name_left][table_name_right] = {"keys": (left_keys, right_keys)}
         self.joins[table_name_right][table_name_left] = {"keys": (right_keys, left_keys)}
-        self.determine_cardinality(table_name_left, left_keys, table_name_right, right_keys)
+        self.determine_multiplicity_and_missing(table_name_left, left_keys, table_name_right, right_keys)
+        
+    def get_num_missing_join_keys(self, 
+                                  table_name_left :str, 
+                                  leftKeys: list,
+                                  table_name_right:str, 
+                                  rightKeys: list):
+        # below two queries get the set of join keys
+        set_left = self.exe.execute_spja_query(aggregate_expressions={"join_key": (",".join(leftKeys), Aggregator.IDENTITY)},
+                                         from_tables=[table_name_left], 
+                                         mode=4)
+        set_right = self.exe.execute_spja_query(aggregate_expressions={"join_key": (",".join(rightKeys), Aggregator.IDENTITY)},
+                                         from_tables=[table_name_right], 
+                                         mode=4)
+        
+        # below two queries get the difference of join keys
+        diff_left = self.exe.set_query("EXCEPT", set_left, set_right)
+        diff_right = self.exe.set_query("EXCEPT", set_right, set_left)
+        
+        # get the count of the difference of join keys
+        num_miss_left = self.exe.execute_spja_query(aggregate_expressions={'count':('*',  Aggregator.COUNT)},
+                                                    from_tables=[diff_left],
+                                                    mode=3)[0][0]
+        
+        num_miss_right = self.exe.execute_spja_query(aggregate_expressions={'count':('*',  Aggregator.COUNT)},
+                                                    from_tables=[diff_right],
+                                                    mode=3)[0][0]
+        
+        return num_miss_left, num_miss_right
+        
 
-    def determine_cardinality(self, table_name_left :str, leftKeys: list,
-                              table_name_right:str, rightKeys: list):
+    def determine_multiplicity_and_missing(self, 
+                                          table_name_left :str, 
+                                          leftKeys: list,
+                                          table_name_right:str, 
+                                          rightKeys: list):
+        
+        num_miss_left, num_miss_right = self.get_num_missing_join_keys(table_name_left, 
+                                                                       leftKeys, 
+                                                                       table_name_right, 
+                                                                       rightKeys)
+        
+        if num_miss_left != 0:
+            self.missing_keys[table_name_right][table_name_left] = num_miss_left
+        if num_miss_right != 0:
+            self.missing_keys[table_name_left][table_name_right] = num_miss_right
 
-        #TODO: move to executor
-        q1 = self.exe.execute_spja_query(aggregate_expressions={",".join(leftKeys): (",".join(leftKeys), Aggregator.IDENTITY)},
-                                    order_by=leftKeys, from_tables=[table_name_left], mode=4)
-        q2 = self.exe.execute_spja_query(aggregate_expressions={",".join(rightKeys): (",".join(rightKeys), Aggregator.IDENTITY)},
-                                         order_by=rightKeys, from_tables=[table_name_right], mode=4)
+        self.multiplicity[table_name_left][table_name_right] = self.get_max_multiplicity(table_name_left, leftKeys)
+        self.multiplicity[table_name_right][table_name_left] = self.get_max_multiplicity(table_name_right, rightKeys)
 
-        resA = self.exe.execute_set_operation_query("EXCEPT", q1, q2)
-        resB = self.exe.execute_set_operation_query("EXCEPT", q2, q1)
-
-        # if result is not empty that means some key values are missing from the other relation
-        if len(resA) > 0:
-            self.missing_keys[table_name_right][table_name_left] = "MISSING"
-        if len(resB) > 0:
-            self.missing_keys[table_name_left][table_name_right] = "MISSING"
-
-        self.cardinality[table_name_left][table_name_right] = self.execute_cardinality_query(table_name_left, leftKeys)
-        self.cardinality[table_name_right][table_name_left] = self.execute_cardinality_query(table_name_right, rightKeys)
-
-    def execute_cardinality_query(self, table, keys):
-        agg_exp = {}
-        agg_exp['count'] = ('*',  Aggregator.COUNT)
-        left_distinct_table = self.exe.execute_spja_query(aggregate_expressions=agg_exp,
-                                                          from_tables=[table],
-                                                          group_by=keys,
-                                                          table_name=table,
-                                                          mode=4)
-
-        agg_exp = {}
-        agg_exp['max_count'] = ('count', Aggregator.MAX)
-        res=self.exe.execute_spja_query(from_tables=[left_distinct_table + f' as {table}'],
-                                        aggregate_expressions=agg_exp,
-                                        mode=3)
-        return res[0][0]
-
+    def get_max_multiplicity(self, table, keys):
+        multiplicity = self.exe.execute_spja_query(aggregate_expressions={'count': ('*',  Aggregator.COUNT)},
+                                                   from_tables=[table],
+                                                   group_by=keys,
+                                                   mode=4)
+        
+        max_multiplicity=self.exe.execute_spja_query(aggregate_expressions={'max_count': ('count', Aggregator.MAX)},
+                                                     from_tables=['(' + multiplicity + ')'],
+                                                     mode=3)[0][0]
+        return max_multiplicity
+    
+    # replace the table name from table_prev to table_after
     def replace(self, table_prev, table_after):
         if table_prev not in self.relation_schema:
             raise JoinGraphException(table_prev + ' doesn\'t exist!')
@@ -201,7 +229,7 @@ class JoinGraph:
         nodes = []
         links = []
         for table_name in self.relation_schema:
-            attributes = set(self.exe.get_schema(table_name))
+            attributes = set(self.get_useful_attributes(table_name))
             nodes.append({"id": table_name, "attributes": list(attributes)})
 
         # avoid edge in opposite direction

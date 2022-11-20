@@ -46,7 +46,7 @@ class TestCJT(unittest.TestCase):
 
     """
     Tests if message passing works in many to many join graph.
-    Following tables have many to many cardinality on B.
+    Following tables have many to many multiplicity on B.
     Test Query:
         SELECT SUM(A), count(*), R.B
         FROM R join G on R.B = G.B join T on R.B = T.B
@@ -117,7 +117,7 @@ class TestCJT(unittest.TestCase):
 
     """
     Tests if message passing works in many to many join graph.
-    Following tables have many to many cardinality on B.
+    Following tables have many to many multiplicity on B.
     Test Query:
         SELECT SUM(A), count(*), R.B
         FROM R join G on R.B = G.B join T on R.B = T.B
@@ -200,31 +200,29 @@ class TestCJT(unittest.TestCase):
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
         self.assertEqual(expected, actual)
 
-    def test_cardinality_for_many_to_many(self):
+    def test_multiplicity_for_many_to_many(self):
         cjt = self.initialize_synthetic_many_to_many()
 
-        self.assertGreater(cjt.cardinality['R']['S'], 1)
-        self.assertGreater(cjt.cardinality['S']['R'], 1)
-        self.assertGreater(cjt.cardinality['S']['T'], 1)
-        self.assertGreater(cjt.cardinality['T']['S'], 1)
+        self.assertGreater(cjt.multiplicity['R']['S'], 1)
+        self.assertGreater(cjt.multiplicity['S']['R'], 1)
+        self.assertGreater(cjt.multiplicity['S']['T'], 1)
+        self.assertGreater(cjt.multiplicity['T']['S'], 1)
 
-        self.assertEqual(cjt.missing_keys['S']['R'], "MISSING")
+        self.assertEqual(cjt.missing_keys['S']['R'], 1)
         self.assertNotIn('S', cjt.missing_keys['R'])
-
         self.assertNotIn('R', cjt.missing_keys['T'])
         self.assertNotIn('T', cjt.missing_keys['R'])
 
-    def test_cardinality_for_one_to_many(self):
+    def test_multiplicity_for_one_to_many(self):
         cjt = self.initialize_synthetic_one_to_many()
 
-        self.assertGreater(cjt.cardinality['R']['T'], 1)
-        self.assertEqual(cjt.cardinality['T']['R'], 1)
-        self.assertGreater(cjt.cardinality['S']['T'], 1)
-        self.assertEqual(cjt.cardinality['T']['S'], 1)
+        self.assertGreater(cjt.multiplicity['R']['T'], 1)
+        self.assertEqual(cjt.multiplicity['T']['R'], 1)
+        self.assertGreater(cjt.multiplicity['S']['T'], 1)
+        self.assertEqual(cjt.multiplicity['T']['S'], 1)
 
-        self.assertEqual(cjt.missing_keys['S']['T'], "MISSING")
+        self.assertEqual(cjt.missing_keys['S']['T'], 1)
         self.assertNotIn('S', cjt.missing_keys['T'])
-
         self.assertNotIn('R', cjt.missing_keys['T'])
         self.assertNotIn('T', cjt.missing_keys['R'])
 
