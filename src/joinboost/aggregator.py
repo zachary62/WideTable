@@ -7,39 +7,39 @@ Message = Enum('Message', 'IDENTITY SELECTION FULL UNDECIDED')
 
 
 def parse_agg(agg, para):
-    if agg == Aggregator.SUM:
+    if agg.value == Aggregator.SUM.value:
         assert isinstance(para, str)
         return 'SUM(' + para + ')'
-    elif agg == Aggregator.DISTRIBUTED_SUM_PROD:
+    elif agg.value == Aggregator.DISTRIBUTED_SUM_PROD.value:
         assert isinstance(para, list)
         # para structure: [[sum_column and list of annotated columns in other relations],[...]]
         # example para: [[R1.s, R2.c, R3.c], [R2.s, R1.c, R3.c], [R3.s, R1.c, R2.c]]
         _tmp = ['*'.join(elem) for elem in para]
         # expected: SUM(R1.s*R2.c*R3.c + R2.s*R1.c*R3.c + R3.s*R1.c*R2.c)
         return 'SUM(' + '+'.join(_tmp) + ')'
-    elif agg == Aggregator.SUM_PROD:
+    elif agg.value == Aggregator.SUM_PROD.value:
         assert isinstance(para, dict)
         _tmp = [key + '.' + value for key, value in para.items()]
         return 'SUM(' + '*'.join(_tmp) + ')'
-    elif agg == Aggregator.DISTINCT_COUNT:
+    elif agg.value == Aggregator.DISTINCT_COUNT.value:
         assert isinstance(para, str)
         return 'COUNT(DISTINCT(' + para + '))'
-    elif agg == Aggregator.COUNT:
+    elif agg.value == Aggregator.COUNT.value:
         assert isinstance(para, str)
         return 'COUNT(' + para + ')'
-    elif agg == Aggregator.IDENTITY:
+    elif agg.value == Aggregator.IDENTITY.value:
         return str(para)
-    elif agg == Aggregator.PROD:
+    elif agg.value == Aggregator.PROD.value:
         assert isinstance(para, list)
         _tmp = ['CAST(' + val + ' AS DOUBLE)' for val in para]
         return '*'.join(_tmp) 
-    elif agg == Aggregator.SUB:
+    elif agg.value == Aggregator.SUB.value:
         assert isinstance(para, tuple)
         return str(para[0]) + ' - ' + str(para[1])
-    elif agg == Aggregator.DIV:
+    elif agg.value == Aggregator.DIV.value:
         assert isinstance(para, tuple)
         return str(para[0]) + ' / ' + str(para[1])
-    elif agg == Aggregator.MAX:
+    elif agg.value == Aggregator.MAX.value:
         assert isinstance(para, str)
         return 'MAX(' + para + ')'
     else:
