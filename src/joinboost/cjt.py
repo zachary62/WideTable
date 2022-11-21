@@ -59,7 +59,7 @@ class CJT(JoinGraph):
         pass
                 
     def add_groupbys(self, relation, attributes, lazy=True):
-        if relation not in self.annotations:
+        if relation not in self.groupby:
             self.groupby[relation] = attributes
         else:
             self.groupby[relation] += attributes

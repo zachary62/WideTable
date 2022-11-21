@@ -6,6 +6,22 @@ from .joingraph import JoinGraph
 '''Handle semi ring in DBMS'''
 
 
+def SemiRingFactory(name, 
+                    relation, 
+                    attr):
+    name = name.strip().lower()
+    # By default if con is not specified, user uses Pandas dataframe
+    if name == "sum":
+        return SumSemiRing(relation=relation, attr=attr)
+    if name == "avg":
+        return AvgSemiRing(relation=relation, attr=attr)
+    if name == "mean":
+        return AvgSemiRing(relation=relation, attr=attr)
+    if name == "count":
+        return SumSemiRing(relation=relation)
+    
+    raise Exception('Unsupported Semiring')
+
 class SemiRing(ABC):
     type: str
 
@@ -33,6 +49,12 @@ class SemiRing(ABC):
     def compute_col_operations(self, relations=[], s_after='s', c_after='c', s='s', c='c'):
         pass
 
+    def __str__(self):
+        pass
+    
+    def __hash__(self):
+        return self.__str__().__hash__ ()
+
 
 class SumSemiRing(SemiRing):
     def __init__(self, relation="", attr=""):
@@ -56,7 +78,7 @@ class SumSemiRing(SemiRing):
         return self.relation
     
     def __str__(self):
-        return f'SUM(self.attr)'
+        return f'SUM({self.relation}.{self.attr})'
 
 
 class CountSemiRing(SemiRing):
@@ -77,7 +99,7 @@ class CountSemiRing(SemiRing):
         return self.relation
     
     def __str__(self):
-        return f'COUNT()'
+        return f'COUNT({self.relation}.1)'
 
 
 class AvgSemiRing(SemiRing):
@@ -107,9 +129,11 @@ class AvgSemiRing(SemiRing):
 
         sum_join_calculation = []
         for i, relation in enumerate(relations):
-            sum_join_calculation.append([f'"{str(relation)}"."{s}"'] + [f'"{rel}"."{c}"' for rel in (relations[:i] + relations[i+1:])])
+            sum_join_calculation.append([f'"{str(relation)}"."{s}"'] + \
+                                        [f'"{rel}"."{c}"' for rel in (relations[:i] + relations[i+1:])])
 
-        return {s_after: (sum_join_calculation, Aggregator.DISTRIBUTED_SUM_PROD), c_after: (annotated_count, Aggregator.SUM_PROD)}
+        return {s_after: (sum_join_calculation, Aggregator.DISTRIBUTED_SUM_PROD), 
+                c_after: (annotated_count, Aggregator.SUM_PROD)}
 
     def get_value(self):
         return self.r_pair
@@ -118,7 +142,7 @@ class AvgSemiRing(SemiRing):
         return self.relation
     
     def __str__(self):
-        return f'AVG(self.attr)'
+        return f'AVG({self.relation}.{self.attr})'
 
 # check if expression has all identity aggregator
 def all_identity(expression):
