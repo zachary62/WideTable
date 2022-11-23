@@ -20,8 +20,8 @@ class JoinGraph:
         # {keys: (from_keys, to_keys), message_type: "", message: name, ...}
         self.joins = copy.deepcopy(joins)
 
-        # from_relation => to_relation => "M_to_O"/"O_to_M"/"M_to_M"/"O_to_O"
-        self.multiplicity = copy.deepcopy(joins)
+        # from_relation => to_relation => max multiplicity number
+        self.multiplicity = dict()
         self.missing_keys = copy.deepcopy(joins)
 
         # maps each relation => attribute => dimension attributes (may not include join keys)
@@ -109,6 +109,9 @@ class JoinGraph:
                 l_keys, _ = self.joins[f_table][table]["keys"]
                 keys = keys.union(set(l_keys))
             return list(keys)
+
+    def get_multiplicity(self, from_table, to_table):
+        return self.multiplicity[from_table][to_table]
 
     # get the dimension attributes and the join keys
     def get_useful_attributes(self, table):
