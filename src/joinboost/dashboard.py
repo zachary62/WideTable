@@ -35,7 +35,7 @@ class DashBoard(JoinGraph):
     def register_measurement(self, name, relation, attr):
         semi_ring = SemiRingFactory(name, relation, attr)
         self.register_semiring(semi_ring)
-        return semi_ring
+        return semi_ringy
         
     # TODO    
     def _repr_html_(self):
