@@ -36,7 +36,70 @@ class DashBoard(JoinGraph):
         semi_ring = SemiRingFactory(name, relation, attr)
         self.register_semiring(semi_ring)
         return semi_ring
-        
-    # TODO    
+
+    '''
+    node structure:
+    nodes: [
+        { 
+            id: table_name,
+            dimensions: [dim1, dim2],
+            join_keys: [
+                {
+                    key: col1
+                    TODO:
+                    multiplicity: many/one
+                },
+            ],
+            measurements: [ AVG, SUM, COUNT]
+        }
+    ]
+    
+    edge structure: [
+        {
+            source: node_id,
+            left_keys: [key1, key2, ...],
+            dest: node_id,
+            right_keys: [key1, key2, ...]
+        }
+    ]
+    
+    '''
     def _repr_html_(self):
-        return "hi"
+        nodes = []
+        links = []
+        for table_name in self.relation_schema:
+            dimensions = set(self.get_relation_attributes(table_name))
+            join_keys = set(self.get_join_keys(table_name))
+            attributes = set(self.get_useful_attributes(table_name))
+            measurements = set()
+            if table_name in self.measurement:
+                measurement = self.measurement[table_name].__str__()
+                measurements.add(measurement)
+                attributes.add(measurement)
+            nodes.append({"id": table_name,
+                          "attributes": list(attributes),
+                          "join_keys": list(join_keys),
+                          "measurements": list(measurements)
+                          })
+
+        # avoid edge in opposite direction
+        seen = set()
+        for table_name_left in self.joins:
+            for table_name_right in self.joins[table_name_left]:
+                if (table_name_right, table_name_left) in seen:
+                    continue
+                keys = self.joins[table_name_left][table_name_right]['keys']
+                left_mul = self.get_multiplicity(table_name_left, table_name_right)
+                right_mul = self.get_multiplicity(table_name_right, table_name_left)
+                links.append({"source": table_name_left, "target": table_name_right,
+                              "left_keys": keys[0], "right_keys": keys[1],
+                              "multiplicity": [left_mul, right_mul]})
+                seen.add((table_name_left, table_name_right))
+
+        self.session_id += 1
+
+        s = self.rep_template
+        s = s.replace("{{session_id}}", str(self.session_id))
+        s = s.replace("{{nodes}}", str(nodes))
+        s = s.replace("{{links}}", str(links))
+        return s
