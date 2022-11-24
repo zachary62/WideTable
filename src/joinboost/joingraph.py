@@ -17,7 +17,8 @@ class JoinGraph:
         self.exe = ExecutorFactory(exe)
         
         # maps each from_relation => to_relation => 
-        # {keys: (from_keys, to_keys), message_type: "", message: name, ...}
+        # {keys: (from_keys, to_keys), message_type: "", message: name, 
+        # multiplicity: x, missing_keys: x ...}
         self.joins = copy.deepcopy(joins)
 
         # from_relation => to_relation => max multiplicity number
@@ -111,7 +112,10 @@ class JoinGraph:
             return list(keys)
 
     def get_multiplicity(self, from_table, to_table):
-        return self.multiplicity[from_table][to_table]
+        return self.joins[from_table][to_table]["multiplicity"]
+    
+    def get_missing_keys(self, from_table, to_table):
+        return self.joins[from_table][to_table]["missing_keys"]
 
     # get the dimension attributes and the join keys
     def get_useful_attributes(self, table):
@@ -174,13 +178,13 @@ class JoinGraph:
                                                                        table_name_right, 
                                                                        rightKeys)
         
-        if num_miss_left != 0:
-            self.missing_keys[table_name_right][table_name_left] = num_miss_left
-        if num_miss_right != 0:
-            self.missing_keys[table_name_left][table_name_right] = num_miss_right
+        self.joins[table_name_right][table_name_left]["missing_keys"] = num_miss_left
+        self.joins[table_name_left][table_name_right]["missing_keys"] = num_miss_right
 
-        self.multiplicity[table_name_left][table_name_right] = self.get_max_multiplicity(table_name_left, leftKeys)
-        self.multiplicity[table_name_right][table_name_left] = self.get_max_multiplicity(table_name_right, rightKeys)
+        self.joins[table_name_left][table_name_right]["multiplicity"] = \
+        self.get_max_multiplicity(table_name_left, leftKeys)
+        self.joins[table_name_right][table_name_left]["multiplicity"] = \
+        self.get_max_multiplicity(table_name_right, rightKeys)
 
     def get_max_multiplicity(self, table, keys):
         multiplicity = self.exe.execute_spja_query(aggregate_expressions={'count': ('*',  Aggregator.COUNT)},

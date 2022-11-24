@@ -1,8 +1,8 @@
 import duckdb
 
-from src.joinboost.cjt import CJT
-from src.joinboost.joingraph import JoinGraph
-from src.joinboost.semiring import AvgSemiRing
+from joinboost.cjt import CJT
+from joinboost.joingraph import JoinGraph
+from joinboost.semiring import AvgSemiRing
 
 
 """

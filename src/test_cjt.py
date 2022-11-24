@@ -6,7 +6,7 @@ from joinboost.cjt import CJT
 from joinboost.joingraph import JoinGraph
 from joinboost.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
 from joinboost.aggregator import Annotation
-from src.test_utils import initialize_synthetic_one_to_many, initialize_synthetic_many_to_many
+from test_utils import initialize_synthetic_one_to_many, initialize_synthetic_many_to_many
 
 
 class TestCJT(unittest.TestCase):

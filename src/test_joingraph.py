@@ -44,28 +44,28 @@ class TestJoingraph(unittest.TestCase):
     def test_multiplicity_for_many_to_many(self):
         cjt = test_utils.initialize_synthetic_many_to_many()
 
-        self.assertGreater(cjt.multiplicity['R']['S'], 1)
-        self.assertGreater(cjt.multiplicity['S']['R'], 1)
-        self.assertGreater(cjt.multiplicity['S']['T'], 1)
-        self.assertGreater(cjt.multiplicity['T']['S'], 1)
+        self.assertGreater(cjt.get_multiplicity('R','S'), 1)
+        self.assertGreater(cjt.get_multiplicity('S','R'), 1)
+        self.assertGreater(cjt.get_multiplicity('S','T'), 1)
+        self.assertGreater(cjt.get_multiplicity('T','S'), 1)
 
-        self.assertEqual(cjt.missing_keys['S']['R'], 1)
-        self.assertNotIn('S', cjt.missing_keys['R'])
-        self.assertNotIn('R', cjt.missing_keys['T'])
-        self.assertNotIn('T', cjt.missing_keys['R'])
+        self.assertEqual(cjt.get_missing_keys('S','R'), 1)
+        self.assertEqual(cjt.get_missing_keys('R','S'), 0)
+        self.assertEqual(cjt.get_missing_keys('T','S'), 0)
+        self.assertEqual(cjt.get_missing_keys('S','T'), 1)
 
     def test_multiplicity_for_one_to_many(self):
         cjt = test_utils.initialize_synthetic_one_to_many()
 
-        self.assertGreater(cjt.multiplicity['R']['T'], 1)
-        self.assertEqual(cjt.multiplicity['T']['R'], 1)
-        self.assertGreater(cjt.multiplicity['S']['T'], 1)
-        self.assertEqual(cjt.multiplicity['T']['S'], 1)
+        self.assertGreater(cjt.get_multiplicity('R','T'), 1)
+        self.assertEqual(cjt.get_multiplicity('T','R'), 1)
+        self.assertGreater(cjt.get_multiplicity('S','T'), 1)
+        self.assertEqual(cjt.get_multiplicity('T','S'), 1)
 
-        self.assertEqual(cjt.missing_keys['S']['T'], 1)
-        self.assertNotIn('S', cjt.missing_keys['T'])
-        self.assertNotIn('R', cjt.missing_keys['T'])
-        self.assertNotIn('T', cjt.missing_keys['R'])
+        self.assertEqual(cjt.get_missing_keys('S','T'), 1)
+        self.assertEqual(cjt.get_missing_keys('T','S'), 0)
+        self.assertEqual(cjt.get_missing_keys('T','S'), 0)
+        self.assertEqual(cjt.get_missing_keys('S','T'), 1)
 
 
 if __name__ == '__main__':
