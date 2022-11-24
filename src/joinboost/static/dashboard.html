@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+    .links line {
+        stroke: #aaa;
+    }
+
+    .nodes circle {
+        pointer-events: all;
+        stroke: none;
+        stroke-width: 40px;
+    }
+
+    .table_names rect {
+        fill: cornflowerblue;
+        background-color: cornflowerblue;
+    }
+
+    html {
+        font-family: sans-serif;
+        font-size: 12px;
+    }
+
+</style>
+<svg id="session{{session_id}}" width="800" height="800"></svg><br>
+<div id="session{{session_id}}schema"></div>
+<script src="d3.v5.min.js"></script> 
+<script>
+    function getMaxComputedTextLength(trueTypeOf) {
+        let max = 0
+        for (let i = 0; i < this.parentNode.childNodes.length; i++) {
+            if (trueTypeOf(this.parentNode.childNodes[i]) === 'svggelement' ) {
+                max = getMaxTextLength(this.parentNode.childNodes[i], trueTypeOf, max);
+            } else if (trueTypeOf(this.parentNode.childNodes[i]) === 'svgtextelement'
+                && this.parentNode.childNodes[i].getComputedTextLength() > max) {
+                max = this.parentNode.childNodes[i].getComputedTextLength()
+            }
+        }
+        return max + 20
+    }
+
+    function getMaxTextLength(nodes, trueTypeOf, max) {
+        for (let i = 0; i < nodes.childNodes.length; i++) {
+            if (trueTypeOf(nodes.childNodes[i]) === 'svgtextelement'
+                && nodes.childNodes[i].getComputedTextLength() > max) {
+                max = nodes.childNodes[i].getComputedTextLength()
+            }
+        }
+        return max;
+    }
+
+    function getMaxComputedFromParents(trueTypeOf) {
+        let max = 0
+        //searching grand parent's level
+        max = getMaxTextLength(this.parentNode.parentNode, trueTypeOf, max);
+        //searching parent's level
+        max = getMaxTextLength(this.parentNode, trueTypeOf, max);
+        return max + 20
+    }
+
+
+    console.log("in require");
+    console.log(d3.version)
+    console.log(d3)
+    var svg = d3.select("#session{{session_id}}"),
+        width = +svg.attr("width"),
+        height = +svg.attr("height");
+
+    var schemaarea = d3.select("#session{{session_id}}schema")
+
+    graph = {
+        "nodes": {{nodes}},
+    "links": {{links}}
+    }
+
+    // console.log(graph.nodes)
+
+    var trueTypeOf = (obj) => Object.prototype.toString.call(obj).slice(8, -1).toLowerCase()
+
+    var simulation = d3.forceSimulation()
+        .force("link", d3.forceLink().id(function(d) { return d.id; }))
+        .force("charge", d3.forceManyBody().strength(-180))
+        .force("center", d3.forceCenter(width / 2, height / 2));
+
+    //list of link containers
+
+    var linkContainers = svg.append('g').attr('class', 'links')
+        .selectAll("g")
+        .data(graph.links)
+        .enter()
+        .append("g")
+        .attr('id', function(d) {return 'link_container_' + d.source + '-' + d.target});
+
+    var link = linkContainers
+        .append("line")
+        .attr('id', function(d) { return d.source + "-" + d.target;})
+        .attr('stroke-width', '5px')
+        .attr('stroke', '#D3D3D3')
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));;
+
+    var sourceLinkTexts = linkContainers
+        .append('text')
+        .attr("fill", "Black")
+        .attr('x',function(d) {return d.source.x;})
+        .attr('y',function(d) {return d.source.y;})
+        .text(function(d,i) {
+            // console.log(d)
+            return d.multiplicity[0] + '';
+        })
+    var destLinkTexts = linkContainers
+        .append('text')
+        .attr("fill", "Black")
+        .attr('x',function(d) {return d.target.x;})
+        .attr('y',function(d) {return d.target.y;})
+        .text(function(d,i) {
+            console.log(d)
+            return d.multiplicity[1];
+        })
+
+    //list of node containers
+    var dataEnter = svg
+        .attr("class", "nodes")
+        .append("g")
+        .attr('id', 'nodes')
+        .selectAll("g")
+        .data(graph.nodes)
+        .enter()
+        .append("g")
+        // .join('g')
+        .attr('id', function(d) {return 'node_container_' + d.id})
+    ;
+
+    var schema = schemaarea
+        .selectAll("div")
+        .data(graph.nodes)
+        .enter()
+        .append("div")
+        .attr('id', function(d) { return d.id;})
+
+
+
+    schema.append("text")
+        .style("font-weight", "bold")
+        .text(function(d) { return d.id + ": ";})
+
+
+    schema.selectAll("span")
+        .data(function(d) { return d.attributes;})
+        .enter()
+        .append("span")
+        .attr('id', function(d) { return d.id;})
+        .text(function(d) { return d + ", ";})
+
+    var node = dataEnter.append("rect")
+        .attr('x', 10)
+        .attr('y', 120)
+        .attr('id', function(d) { return d.id;})
+        .attr('width', 60)
+        .attr('height', 30)
+        // .attr('class', 'table_names')
+        .attr('fill', 'cornflowerblue')
+        .attr('stroke', '#bbb')
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+    var nodeText = dataEnter.append("text")
+        .attr('x', 10)
+        .attr('y', 120)
+        .attr("dy", "1em")
+        .attr('fill', 'white')
+        .text(function(d) { return d.id; })
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+    var attrRects = dataEnter.append('g')
+        // .append('rect')
+        .selectAll('rect')
+        .data( function(d) {return d.attributes})
+        .enter()
+        .append('rect')
+        .attr('x', 10)
+        .attr('y', 120)
+        .attr('dy', function(d,i) {
+            return 3*i + 'em'
+        })
+        .attr('id', function(d,i) {return "attr_" + d;})
+        .attr('class', function(d,i) {
+            if (this.parentNode.__data__.join_keys.includes(d)) {
+                return "join_keys"
+            }
+            return "attribute";
+        })
+        .attr('width', 60)
+        .attr('height', 30)
+        .attr('fill', function(d) {
+            if (this.parentNode.__data__.join_keys.includes(d)) {
+                return '#ef8058'
+            } else if (this.parentNode.__data__.measurements.includes(d)) {
+                return '#8cfb14'
+            }
+            return '#fff'
+        })
+        .attr('stroke', '#bbb')
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+    var attrTexts = dataEnter.select('g')
+        .selectAll('text')
+        .data(function(d) {return d.attributes})
+        .enter()
+        .append('text')
+        .attr('class', 'attr_texts')
+        .attr('x', 10)
+        .attr('y', 120)
+        .attr('dy', function(d,i) {
+            return (i + 1)*15;
+        })
+        .text(function(d) { return d; })
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended));
+
+    node.attr("width",function (d) {
+        return getMaxComputedTextLength.call(this, trueTypeOf);
+    });
+    attrRects.attr("width",function (d) {
+        return getMaxComputedFromParents.call(this, trueTypeOf);
+    });
+
+    simulation
+        .nodes(graph.nodes)
+        .on("tick", ticked);
+
+    simulation.force("link")
+        .links(graph.links)
+        .distance(150);
+    // .distance(function(d) {return d.value;});
+
+    function ticked() {
+        link
+            .attr("x1", function(d) { return Math.max(0,Math.min(width, d.source.x)); })
+            .attr("y1", function(d) { return Math.max(0,Math.min(height, d.source.y)); })
+            .attr("x2", function(d) { return Math.max(0,Math.min(width, d.target.x)); })
+            .attr("y2", function(d) { return Math.max(0,Math.min(height, d.target.y)); });
+        sourceLinkTexts
+            .attr('x',function(d) {return d.source.x + (d.target.x - d.source.x)/3})
+            .attr('y',function(d) {return d.source.y + (d.target.y - d.source.y)/3});
+        destLinkTexts
+            .attr('x',function(d) {return d.source.x + 2*(d.target.x - d.source.x)/3})
+            .attr('y',function(d) {return d.source.y + 2*(d.target.y - d.source.y)/3});
+
+        node
+            .attr("x", function(d) {return Math.max(0,Math.min(width, d.x)) - this.getBBox().width/2; })
+            .attr("y", function(d) { return Math.max(0,Math.min(height, d.y)) - this.getBBox().height/2; });
+        nodeText
+            .attr("x", function(d) { return Math.max(0,Math.min(width, d.x)) - this.getBBox().width/2; })
+            .attr("y", function(d) { return Math.max(0,Math.min(height, d.y)) - this.getBBox().height/2; });
+
+        attrRects
+            .attr("x", function(d,i) {return Math.max(0,Math.min(width, this.parentNode.__data__.x)) - this.getBBox().width/2; })
+            .attr("y", function(d,i) {return Math.max(0,Math.min(height, this.parentNode.__data__.y + 30*i)) - this.getBBox().height/2 + 30; });
+
+        attrTexts
+            .attr("x", function(d,i) {return Math.max(0,Math.min(width, this.parentNode.__data__.x)) - this.getBBox().width/2; })
+            .attr("y", function(d,i) {return Math.max(0,Math.min(height, this.parentNode.__data__.y + 15*i)) - this.getBBox().height/2 + 30; });
+
+    }
+
+    function dragstarted(d, i) {
+        console.log(d)
+        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        //moving parent node also, if this is a row text element
+        if (trueTypeOf(d) === 'string') {
+            this.parentNode.__data__.fx = d.x;
+            this.parentNode.__data__.fy = d.y;
+        }
+        d.fx = d.x;
+        d.fy = d.y;
+
+        // unhighligt all
+        svg.selectAll("rect")
+            .style("stroke-width", null)
+
+        svg.selectAll("line")
+            .style("stroke-width", '5px')
+            .style('stroke', '#D3D3D3')
+
+        schemaarea.selectAll("span")
+            .style("color", null)
+
+        // remove highlighting for all attributes of each relation node
+        svg.select("#nodes").selectAll('g').selectAll('g').selectAll('text').style('fill', '#000')
+
+
+        schemaarea.selectAll("div")
+            .style("color", null)
+        // console.log(trueTypeOf(d))
+        if (trueTypeOf(d) === 'string') {
+            //do nothing
+        } else if("id" in d){
+            // highligt rect
+            svg.selectAll("rect").filter(function(cur_d) {return cur_d.id == d.id;})
+                .style("stroke-width", "3px")
+            // highligt text
+            schemaarea.select("#" + d.id)
+                .style("color","#009efd")
+        }
+        else{
+            // highligt line
+            svg.selectAll("line").filter(function(cur_d) {return cur_d.source == d.source && cur_d.target == d.target;})
+                .style("stroke", "#000000")
+
+            svg.select("#node_container_" + d.source.id).selectAll('g').selectAll('text').filter(function(cur_d) {
+                return d.left_keys.includes(cur_d);
+            }).style("fill", "#009efd")
+            svg.select("#node_container_" + d.target.id).selectAll('g').selectAll('text').filter(function(cur_d) {
+                return d.right_keys.includes(cur_d);
+            }).style("fill", "#009efd")
+
+            schemaarea.select("#" + d.source.id).selectAll("span")
+                .filter(function(cur_d) {return d.left_keys.includes(cur_d);})
+                .style("color","#009efd")
+
+            schemaarea.select("#" + d.target.id).selectAll("span")
+                .filter(function(cur_d) {return d.right_keys.includes(cur_d);})
+                .style("color","#009efd")
+        }
+
+    }
+
+    function dragged(d,i) {
+        //moving parent node also, if this is a row text element
+        if (trueTypeOf(d) === 'string') {
+            this.parentNode.__data__.fx = d3.event.x
+            this.parentNode.__data__.fy = d3.event.y - (i+1)*30;
+        }
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
+
+    function dragended(d) {
+        if (!d3.event.active) simulation.alphaTarget(0);
+        if (trueTypeOf(d) === 'string') {
+            this.parentNode.__data__.fx = null
+            this.parentNode.__data__.fy = null
+        }
+        d.fx = null;
+        d.fy = null;
+    }
+
+    ;
+
+</script>

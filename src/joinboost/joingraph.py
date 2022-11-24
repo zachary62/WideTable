@@ -30,7 +30,7 @@ class JoinGraph:
         self.session_id = int(time.time())
         
         # template for jupyter notebook display
-        self.rep_template = data = pkgutil.get_data(__name__, "d3graph.html").decode('utf-8')
+        self.rep_template = data = pkgutil.get_data(__name__, "static/joingraph.html").decode('utf-8')
         
     # return a list of relations in the join graph 
     def get_relations(self):
@@ -42,7 +42,7 @@ class JoinGraph:
     
     def get_relation_info(self):
         return self.relation_info
-
+    
     def get_relation_attributes(self, relation):
         return list(self.relation_info[relation]["schema"].keys())
     
@@ -52,7 +52,7 @@ class JoinGraph:
     def get_joins(self):
         return self.joins
     
-    def get_user_table(self, relation_name):
+    def get_user_table(self, relation):
         return self.relation_info[relation]["user_table"]
     
     # given a user_table, find the table name in the database

@@ -85,7 +85,8 @@ class DuckdbExecutor(Executor):
     # mode = 1 will write the query result to a table and return table name
     # mode = 2 will create the query as view and return view name
     # mode = 3 will execute the query and return the result
-    # mode = 4 will create the sql query and return the query (for nested query)
+    # mode = 4 will create the sql query and return the query string (for nested query)
+    # mode = 5 will execute the query and return the result as pandas dataframe
     def execute_spja_query(self, 
                            # By default, we select all
                            aggregate_expressions: dict = {None: ('*', Aggregator.IDENTITY)},
@@ -135,6 +136,9 @@ class DuckdbExecutor(Executor):
             sql = '(' + spja + ')'
             return sql
         
+        elif mode == 5:
+            return self._execute_query(spja, pandas= True)
+        
         else:
             raise ExecutorException('Unsupported mode for query execution!')
         
@@ -179,7 +183,7 @@ class DuckdbExecutor(Executor):
     def set_query(self, operation, expr1, expr2):
         return f'({expr1} {operation} {expr2})'
 
-    def _execute_query(self, q):
+    def _execute_query(self, q, pandas=False):
         start_time = time.time()
         if self.debug:
             print(q)
@@ -191,7 +195,10 @@ class DuckdbExecutor(Executor):
         
         result = None
         try:
-            result = self.conn.fetchall()
+            if not pandas:
+                result = self.conn.fetchall()
+            else:
+                result = self.conn.fetchdf()
             if self.debug:
                 print(result)
         except Exception as e:

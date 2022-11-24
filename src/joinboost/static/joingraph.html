@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.links line {
+  stroke: #aaa;
+}
+
+.nodes circle {
+  pointer-events: all;
+  stroke: none;
+  stroke-width: 40px;
+}
+
+html {
+    font-family: sans-serif;
+    font-size: 12px;
+}
+
+</style>
+<svg id="session{{session_id}}" width="600" height="600"></svg><br>
+<div id="session{{session_id}}schema"></div>
+<script src="d3.v4.min.js"></script> 
+<script>
+var svg = d3.select("#session{{session_id}}"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+var schemaarea = d3.select("#session{{session_id}}schema")
+
+graph = {
+  "nodes": {{nodes}},
+  "links": {{links}}
+}
+
+var simulation = d3.forceSimulation()
+    .force("link", d3.forceLink().id(function(d) { return d.id; }))
+    .force("charge", d3.forceManyBody().strength(-180))
+    .force("center", d3.forceCenter(width / 2, height / 2));
+
+
+
+var link = svg.append("g")
+    .attr("class", "links")
+    .selectAll("line")
+    .data(graph.links)
+    .enter()
+    .append("line")
+    .attr('id', function(d) { return d.source + "-" + d.target;})
+    .attr('stroke-width', '5px')
+    .attr('stroke', '#D3D3D3')
+    .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));;
+
+var dataEnter = svg
+    .attr("class", "nodes").append("g")
+    .selectAll("g")
+    .data(graph.nodes)
+    .enter().append("g");
+
+var schema = schemaarea
+               .selectAll("div")
+               .data(graph.nodes)
+               .enter()
+               .append("div")
+               .attr('id', function(d) { return d.id;})
+
+
+
+schema.append("text")
+      .style("font-weight", "bold")
+      .text(function(d) { return d.id + ": ";})
+
+
+schema.selectAll("span")
+       .data(function(d) { return d.attributes;})
+       .enter()
+       .append("span")
+       .attr('id', function(d) { return d.id;})
+       .text(function(d) { return d + ", ";})
+
+var node = dataEnter.append("rect")
+  .attr('x', 10)
+  .attr('y', 120)
+  .attr('id', function(d) { return d.id;})
+  .attr('width', 60)
+  .attr('height', 30)
+  .attr('fill', '#fff')
+  .attr('stroke', '#bbb')
+    .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+var nodeText = dataEnter.append("text")
+                  .attr('x', 10)
+                  .attr('y', 120)
+                  .attr("dy", "1em")
+                  .text(function(d) { return d.id; })
+                  .call(d3.drag()
+                      .on("start", dragstarted)
+                      .on("drag", dragged)
+                      .on("end", dragended));
+
+node.attr("width",function (d) {console.log(this);
+  return this.parentNode.childNodes[1].getComputedTextLength() + 20}
+)
+
+
+
+// node.append("text")
+//     .text(function(d) { return d.id; });
+
+simulation
+    .nodes(graph.nodes)
+    .on("tick", ticked);
+
+simulation.force("link")
+    .links(graph.links)
+    .distance(100);
+    // .distance(function(d) {return d.value;});
+
+// simulation.force('box', boxForce)
+// .force('collision', collisionForce)
+// .nodes(graph.nodes);
+
+function ticked() {
+  link
+      .attr("x1", function(d) { return Math.max(0,Math.min(width, d.source.x)); })
+      .attr("y1", function(d) { return Math.max(0,Math.min(height, d.source.y)); })
+      .attr("x2", function(d) { return Math.max(0,Math.min(width, d.target.x)); })
+      .attr("y2", function(d) { return Math.max(0,Math.min(height, d.target.y)); });
+
+  node
+      .attr("x", function(d) { return Math.max(0,Math.min(width,d.x)) - this.getBBox().width/2; })
+      .attr("y", function(d) { return Math.max(0,Math.min(height,d.y)) - this.getBBox().height/2; });
+
+  nodeText
+      .attr("x", function(d) { return Math.max(0,Math.min(width,d.x)) - this.getBBox().width/2; })
+      .attr("y", function(d) { return Math.max(0,Math.min(height,d.y)) - this.getBBox().height/2; });
+
+}
+
+function dragstarted(d) {
+    console.log(d)
+    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+
+    // unhighligt all
+    svg.selectAll("rect")
+      .style("stroke-width", null)
+
+    svg.selectAll("line")
+      .style("stroke-width", '5px')
+        .style('stroke', '#D3D3D3')
+
+    schemaarea.selectAll("span")
+      .style("color", null)
+
+    schemaarea.selectAll("div")
+      .style("color", null)
+
+    // if node
+    if("id" in d){
+        // highligt rect
+        svg.selectAll("rect").filter(function(cur_d) {return cur_d.id == d.id;})
+          .style("stroke-width", "3px")
+        // highligt text
+        schemaarea.select("#" + d.id)
+          .style("color","#009efd")
+    }
+    else{
+        // highligt line
+        svg.selectAll("line").filter(function(cur_d) {return cur_d.source == d.source && cur_d.target == d.target;})
+            .style("stroke", "#000000")
+
+        schemaarea.select("#" + d.source.id).selectAll("span")
+          .filter(function(cur_d) {return d.left_keys.includes(cur_d);})
+          .style("color","#009efd")
+
+        schemaarea.select("#" + d.target.id).selectAll("span")
+          .filter(function(cur_d) {return d.right_keys.includes(cur_d);})
+          .style("color","#009efd")
+    }
+
+}
+
+function dragged(d) {
+  d.fx = d3.event.x;
+  d.fy = d3.event.y;
+}
+
+function dragended(d) {
+  if (!d3.event.active) simulation.alphaTarget(0);
+  d.fx = null;
+  d.fy = null;
+}
+
+
+</script>

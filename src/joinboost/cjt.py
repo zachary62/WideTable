@@ -268,7 +268,8 @@ class CJT(JoinGraph):
         if relation is None:
             raise ValueError("Invalid relation")
         
-        lift_exp = self.semi_ring.lift_exp(relation=relation)
+        user_table = self.get_user_table(relation)
+        lift_exp = self.semi_ring.lift_exp(relation=user_table)
         
         # copy the remaining attributes as they are (no aggregation)
         for attr in self.get_useful_attributes(relation):

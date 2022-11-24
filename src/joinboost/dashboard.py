@@ -3,19 +3,21 @@ from .semiring import *
 from .joingraph import JoinGraph
 from .cjt import CJT
 from .aggregator import *
-
+import pkgutil
 
 class DashBoard(JoinGraph):
     def __init__(self,
                  join_graph: JoinGraph):
-        self.join_graph = join_graph
         super().__init__(join_graph.exe,
                          join_graph.joins,
-                         join_graph.relation_schema)
+                         join_graph.relation_info)
         
-        self.dimension = self.relation_schema
         self.measurement = dict()
         self.cjts = dict()
+        
+        # template for jupyter notebook display
+        self.rep_template = data = pkgutil.get_data(__name__, "static/dashboard.html").decode('utf-8')
+        
         
     def register_semiring(self, semi_ring: SemiRing):
         sem_ring_str = semi_ring.__str__()
@@ -29,7 +31,7 @@ class DashBoard(JoinGraph):
         if not self.has_relation(semi_ring.get_relation()):
             raise Exception('The join graph doesn\'t contain the relation for the measurement.')
         
-        self.cjts[sem_ring_str] = CJT(semi_ring=semi_ring, join_graph=self.join_graph)
+        self.cjts[sem_ring_str] = CJT(semi_ring=semi_ring, join_graph=self)
         self.measurement[semi_ring.get_relation()] = semi_ring
         
     def register_measurement(self, name, relation, attr):
@@ -41,7 +43,7 @@ class DashBoard(JoinGraph):
     node structure:
     nodes: [
         { 
-            id: table_name,
+            id: relation,
             dimensions: [dim1, dim2],
             join_keys: [
                 {
@@ -68,16 +70,16 @@ class DashBoard(JoinGraph):
     def _repr_html_(self):
         nodes = []
         links = []
-        for table_name in self.relation_schema:
-            dimensions = set(self.get_relation_attributes(table_name))
-            join_keys = set(self.get_join_keys(table_name))
-            attributes = set(self.get_useful_attributes(table_name))
+        for relation in self.get_relations():
+            dimensions = set(self.get_relation_attributes(relation))
+            join_keys = set(self.get_join_keys(relation))
+            attributes = set(self.get_useful_attributes(relation))
             measurements = set()
-            if table_name in self.measurement:
-                measurement = self.measurement[table_name].__str__()
+            if relation in self.measurement:
+                measurement = self.measurement[relation].__str__()
                 measurements.add(measurement)
                 attributes.add(measurement)
-            nodes.append({"id": table_name,
+            nodes.append({"id": relation,
                           "attributes": list(attributes),
                           "join_keys": list(join_keys),
                           "measurements": list(measurements)
@@ -85,17 +87,17 @@ class DashBoard(JoinGraph):
 
         # avoid edge in opposite direction
         seen = set()
-        for table_name_left in self.joins:
-            for table_name_right in self.joins[table_name_left]:
-                if (table_name_right, table_name_left) in seen:
+        for relation_left in self.joins:
+            for relation_right in self.joins[relation_left]:
+                if (relation_right, relation_left) in seen:
                     continue
-                keys = self.joins[table_name_left][table_name_right]['keys']
-                left_mul = self.get_multiplicity(table_name_left, table_name_right)
-                right_mul = self.get_multiplicity(table_name_right, table_name_left)
-                links.append({"source": table_name_left, "target": table_name_right,
+                keys = self.joins[relation_left][relation_right]['keys']
+                left_mul = self.get_multiplicity(relation_left, relation_right)
+                right_mul = self.get_multiplicity(relation_right, relation_left)
+                links.append({"source": relation_left, "target": relation_right,
                               "left_keys": keys[0], "right_keys": keys[1],
                               "multiplicity": [left_mul, right_mul]})
-                seen.add((table_name_left, table_name_right))
+                seen.add((relation_left, relation_right))
 
         self.session_id += 1
 
