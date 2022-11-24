@@ -1,6 +1,6 @@
 import time
 
-from .aggregator import Aggregator
+from .aggregator import *
 import copy
 from .executor import ExecutorFactory
 import pkgutil
@@ -48,9 +48,6 @@ class JoinGraph:
     
     def get_type(self, relation, attribute): 
         return self.relation_info[relation]["schema"][attribute]
-
-    def get_joins(self):
-        return self.joins
     
     def get_user_table(self, relation):
         return self.relation_info[relation]["user_table"]
@@ -119,8 +116,12 @@ class JoinGraph:
                 keys = keys.union(set(l_keys))
             return list(keys)
 
-    def get_multiplicity(self, from_table, to_table):
-        return self.joins[from_table][to_table]["multiplicity"]
+    def get_multiplicity(self, from_table, to_table, simple=False):
+        if not simple:
+            return self.joins[from_table][to_table]["multiplicity"]
+        else:
+            return "M" if (self.joins[from_table][to_table]["multiplicity"] > 1) else "1"
+        
     
     def get_missing_keys(self, from_table, to_table):
         return self.joins[from_table][to_table]["missing_keys"]
@@ -142,8 +143,10 @@ class JoinGraph:
         left_keys = [attr for attr in left_keys]
         right_keys = [attr for attr in right_keys]
 
-        self.joins[relation_left][relation_right] = {"keys": (left_keys, right_keys)}
-        self.joins[relation_right][relation_left] = {"keys": (right_keys, left_keys)}
+        self.joins[relation_left][relation_right] = {"keys": (left_keys, right_keys),
+                                                     "message_type": Message.UNDECIDED,}
+        self.joins[relation_right][relation_left] = {"keys": (right_keys, left_keys),
+                                                     "message_type": Message.UNDECIDED,}
         self.determine_multiplicity_and_missing(relation_left, left_keys, relation_right, right_keys)
         
     def get_num_missing_join_keys(self, 

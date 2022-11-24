@@ -24,7 +24,6 @@ class CJT(JoinGraph):
         # for now, treat group-by annotations specially
         # self.relation_info => rel => groupby =>[group attributes]
         # TODO: currently assume that attribute name are unique across relations
-        
 
     # given the from_table and to_table, return the message in between
     def get_message(self, from_table: str, to_table: str):
@@ -32,7 +31,7 @@ class CJT(JoinGraph):
 
     def delete_message(self, from_table: str, to_table: str):
         del self.joins[from_table][to_table]['message']
-        self.joins[from_table][to_table]['message_type'] = 'missing'
+        self.joins[from_table][to_table]['message_type'] = Message.UNDECIDED
 
     def get_parsed_annotations(self, relation):
         if "annotation" not in self.relation_info[relation]:
@@ -120,42 +119,49 @@ class CJT(JoinGraph):
         
     # TODO: for both upward and downward message passing, check if it current exist, and skip if yes.
     def downward_message_passing(self,
-                                 rooto_table: str,
+                                 rooto_table=None,
+                                 user_table=None,
                                  m_type: Message = Message.UNDECIDED):
         msgs = []
         if not rooto_table:
-            raise ValueError("root table can not be None")
+            if not user_table:
+                raise ValueError("root table and user table can not be both None")
+            root_table = self.get_relation_from_user_table(user_table)
+            
         self._pre_dfs(rooto_table, m_type=m_type)
         return msgs
     
-    def upward_message_passing(self, root_table: str,
+    def upward_message_passing(self, 
+                               root_table=None, 
+                               user_table=None,
                                m_type: Message = Message.UNDECIDED):
         if not root_table:
-            raise ValueError("root table can not be None")
+            if not user_table:
+                raise ValueError("root table and user table can not be both None")
+            root_table = self.get_relation_from_user_table(user_table)
+            
         self._post_dfs(root_table, m_type=m_type)
 
-    def _post_dfs(self, currento_table: str,
+    def _post_dfs(self, current_table: str,
                   parent_table: str = None,
                   m_type: Message = Message.UNDECIDED):
-        jg = self.get_joins()
-        if currento_table not in jg:
+        if current_table not in self.joins:
             return
-        for c_neighbor in jg[currento_table]:
+        for c_neighbor in self.joins[current_table]:
             if c_neighbor != parent_table:
-                self._post_dfs(c_neighbor, currento_table, m_type=m_type)
+                self._post_dfs(c_neighbor, current_table, m_type=m_type)
         if parent_table:
-            self._send_message(from_table=currento_table, to_table=parent_table, m_type=m_type)
+            self._send_message(from_table=current_table, to_table=parent_table, m_type=m_type)
 
-    def _pre_dfs(self, currento_table: str,
+    def _pre_dfs(self, current_table: str,
                  parent_table: str = None,
                  m_type: Message = Message.UNDECIDED):
-        joins = self.get_joins()
-        if currento_table not in joins:
+        if current_table not in self.joins:
             return
-        for c_neighbor in joins[currento_table]:
+        for c_neighbor in self.joins[current_table]:
             if c_neighbor != parent_table:
-                self._send_message(currento_table, c_neighbor, m_type=m_type)
-                self._pre_dfs(c_neighbor, currento_table, m_type=m_type)
+                self._send_message(current_table, c_neighbor, m_type=m_type)
+                self._pre_dfs(c_neighbor, current_table, m_type=m_type)
                 
     
     def absorption(self, user_table: str, group_by: list, order_by = [], mode=4):
@@ -198,13 +204,15 @@ class CJT(JoinGraph):
         for neighbour_table in self.joins[table]:
             if neighbour_table != excluded_table:
                 incoming_message = self.joins[neighbour_table][table]
+                
                 # there is no incoming message
-                # maybe good to report error
-                if 'message_type' not in incoming_message:
-                    continue
+                if 'message_type' not in incoming_message or \
+                    incoming_message['message_type'] == Message.UNDECIDED:
+                    raise Exception(f'The incoming message from {neighbour_table} to {table} is not found. Have you calibrated?')
                 if 'message_type' in incoming_message and \
                     incoming_message['message_type'] == Message.IDENTITY:
                     continue
+                
 
                 # get the join conditions between from_table and incoming_message
                 from_join_keys, r_join_keys = self.get_join_keys(neighbour_table, table)

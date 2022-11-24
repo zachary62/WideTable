@@ -32,7 +32,11 @@ class DashBoard(JoinGraph):
             raise Exception('The join graph doesn\'t contain the relation for the measurement.')
         
         self.cjts[sem_ring_str] = CJT(semi_ring=semi_ring, join_graph=self)
-        self.measurement[semi_ring.get_relation()] = semi_ring
+        
+        if semi_ring.get_relation() not in self.measurement:
+            self.measurement[semi_ring.get_relation()] = [semi_ring]
+        else:
+            self.measurement[semi_ring.get_relation()].append(semi_ring)
         
     def register_measurement(self, name, relation, attr):
         semi_ring = SemiRingFactory(name, relation, attr)
@@ -76,13 +80,13 @@ class DashBoard(JoinGraph):
             attributes = set(self.get_useful_attributes(relation))
             measurements = set()
             if relation in self.measurement:
-                measurement = self.measurement[relation].__str__()
-                measurements.add(measurement)
-                attributes.add(measurement)
+                for semi_ring in self.measurement[relation]:
+                    measurement = semi_ring.__str__()
+                    measurements.add(measurement)
             nodes.append({"id": relation,
-                          "attributes": list(attributes),
+                          "measurements": list(measurements),
+                          "attributes": list(measurements) + list(attributes),
                           "join_keys": list(join_keys),
-                          "measurements": list(measurements)
                           })
 
         # avoid edge in opposite direction
@@ -92,8 +96,8 @@ class DashBoard(JoinGraph):
                 if (relation_right, relation_left) in seen:
                     continue
                 keys = self.joins[relation_left][relation_right]['keys']
-                left_mul = self.get_multiplicity(relation_left, relation_right)
-                right_mul = self.get_multiplicity(relation_right, relation_left)
+                left_mul = self.get_multiplicity(relation_left, relation_right,simple=True)
+                right_mul = self.get_multiplicity(relation_right, relation_left,simple=True)
                 links.append({"source": relation_left, "target": relation_right,
                               "left_keys": keys[0], "right_keys": keys[1],
                               "multiplicity": [left_mul, right_mul]})

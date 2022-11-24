@@ -29,7 +29,7 @@ class Executor(ABC):
 
     def __init__(self):
         self.view_id = 0
-        self.prefix = 'm_'
+        self.prefix = 'joinboost_tmp_'
 
     def get_next_name(self):
         name = self.prefix + str(self.view_id)
