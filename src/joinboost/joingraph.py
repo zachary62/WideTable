@@ -12,7 +12,7 @@ class JoinGraph:
     def __init__(self,
                 exe = None,
                 joins = {},
-                relation_schema = {}):
+                relation_info = {}):
         
         self.exe = ExecutorFactory(exe)
         
@@ -21,12 +21,10 @@ class JoinGraph:
         # multiplicity: x, missing_keys: x ...}
         self.joins = copy.deepcopy(joins)
 
-        # from_relation => to_relation => max multiplicity number
-        self.multiplicity = dict()
-        self.missing_keys = copy.deepcopy(joins)
-
-        # maps each relation => attribute => dimension attributes (may not include join keys)
-        self.relation_schema = copy.deepcopy(relation_schema)
+        # maps each relation => "schema" => attribute_name => dimension attributes (may not include join keys)
+        #                    => "user_table" => user_table
+        # user_table is what user call the table. We can rename the table for, e.g., for lift.
+        self.relation_info = copy.deepcopy(relation_info)
 
         # some magic/random number used for jupyter notebook display
         self.session_id = int(time.time())
@@ -36,23 +34,33 @@ class JoinGraph:
         
     # return a list of relations in the join graph 
     def get_relations(self):
-        return list(self.relation_schema.keys())
+        return list(self.relation_info.keys())
     
     # return whether the relation is in the join graph 
     def has_relation(self, relation):
-        return (relation in self.relation_schema.keys())
+        return (relation in self.relation_info.keys())
     
-    def get_relation_schema(self):
-        return self.relation_schema
+    def get_relation_info(self):
+        return self.relation_info
 
     def get_relation_attributes(self, relation):
-        return list(self.relation_schema[relation].keys())
+        return list(self.relation_info[relation]["schema"].keys())
     
     def get_type(self, relation, attribute): 
-        return self.relation_schema[relation][attribute]
+        return self.relation_info[relation]["schema"][attribute]
 
     def get_joins(self):
         return self.joins
+    
+    def get_user_table(self, relation_name):
+        return self.relation_info[relation]["user_table"]
+    
+    # given a user_table, find the table name in the database
+    def get_relation_from_user_table(self, user_table):
+        for relation in self.get_relations():
+            if user_table == self.relation_info[relation]["user_table"]:
+                return relation
+        return None
     
     # check if the join graph is acyclic and not disjoint
     def check_acyclic(self):
@@ -84,17 +92,17 @@ class JoinGraph:
 
         self.exe.add_table(relation, relation_address)
         self.joins[relation] = dict()
-        self.multiplicity[relation] = dict()
-        self.missing_keys[relation] = dict()
 
-        if relation not in self.relation_schema:
-            self.relation_schema[relation] = {}
+        if relation not in self.relation_info:
+            self.relation_info[relation] = {}
+            self.relation_info[relation]["schema"] = {}
+            self.relation_info[relation]["user_table"] = relation
 
         for x in attrs:
-            self.relation_schema[relation][x] = ""
+            self.relation_info[relation]["schema"][x] = ""
 
     # get the join keys between two tables
-    # all get all the join keys of one table
+    # or if t_table is None, get all the join keys of one table
     # TODO: check if the join keys exist
     def get_join_keys(self, f_table: str, t_table: str = None):
         if f_table not in self.joins:
@@ -123,32 +131,32 @@ class JoinGraph:
                             self.get_join_keys(table)
         return list(set(useful_attributes))
 
-    def add_join(self, table_name_left: str, table_name_right: str, left_keys: list, right_keys: list):
+    def add_join(self, relation_left: str, relation_right: str, left_keys: list, right_keys: list):
         if len(left_keys) != len(right_keys):
             raise JoinGraphException('Join keys have different lengths!')
-        if table_name_left not in self.relation_schema:
-            raise JoinGraphException(table_name_left + ' doesn\'t exit!')
-        if table_name_right not in self.relation_schema:
-            raise JoinGraphException(table_name_right + ' doesn\'t exit!')
+        if relation_left not in self.relation_info:
+            raise JoinGraphException(relation_left + ' doesn\'t exit!')
+        if relation_right not in self.relation_info:
+            raise JoinGraphException(relation_right + ' doesn\'t exit!')
 
         left_keys = [attr for attr in left_keys]
         right_keys = [attr for attr in right_keys]
 
-        self.joins[table_name_left][table_name_right] = {"keys": (left_keys, right_keys)}
-        self.joins[table_name_right][table_name_left] = {"keys": (right_keys, left_keys)}
-        self.determine_multiplicity_and_missing(table_name_left, left_keys, table_name_right, right_keys)
+        self.joins[relation_left][relation_right] = {"keys": (left_keys, right_keys)}
+        self.joins[relation_right][relation_left] = {"keys": (right_keys, left_keys)}
+        self.determine_multiplicity_and_missing(relation_left, left_keys, relation_right, right_keys)
         
     def get_num_missing_join_keys(self, 
-                                  table_name_left :str, 
+                                  relation_left :str, 
                                   leftKeys: list,
-                                  table_name_right:str, 
+                                  relation_right:str, 
                                   rightKeys: list):
         # below two queries get the set of join keys
         set_left = self.exe.execute_spja_query(aggregate_expressions={"join_key": (",".join(leftKeys), Aggregator.IDENTITY)},
-                                         from_tables=[table_name_left], 
+                                         from_tables=[relation_left], 
                                          mode=4)
         set_right = self.exe.execute_spja_query(aggregate_expressions={"join_key": (",".join(rightKeys), Aggregator.IDENTITY)},
-                                         from_tables=[table_name_right], 
+                                         from_tables=[relation_right], 
                                          mode=4)
         
         # below two queries get the difference of join keys
@@ -168,23 +176,23 @@ class JoinGraph:
         
 
     def determine_multiplicity_and_missing(self, 
-                                          table_name_left :str, 
+                                          relation_left :str, 
                                           leftKeys: list,
-                                          table_name_right:str, 
+                                          relation_right:str, 
                                           rightKeys: list):
         
-        num_miss_left, num_miss_right = self.get_num_missing_join_keys(table_name_left, 
+        num_miss_left, num_miss_right = self.get_num_missing_join_keys(relation_left, 
                                                                        leftKeys, 
-                                                                       table_name_right, 
+                                                                       relation_right, 
                                                                        rightKeys)
         
-        self.joins[table_name_right][table_name_left]["missing_keys"] = num_miss_left
-        self.joins[table_name_left][table_name_right]["missing_keys"] = num_miss_right
+        self.joins[relation_right][relation_left]["missing_keys"] = num_miss_left
+        self.joins[relation_left][relation_right]["missing_keys"] = num_miss_right
 
-        self.joins[table_name_left][table_name_right]["multiplicity"] = \
-        self.get_max_multiplicity(table_name_left, leftKeys)
-        self.joins[table_name_right][table_name_left]["multiplicity"] = \
-        self.get_max_multiplicity(table_name_right, rightKeys)
+        self.joins[relation_left][relation_right]["multiplicity"] = \
+        self.get_max_multiplicity(relation_left, leftKeys)
+        self.joins[relation_right][relation_left]["multiplicity"] = \
+        self.get_max_multiplicity(relation_right, rightKeys)
 
     def get_max_multiplicity(self, table, keys):
         multiplicity = self.exe.execute_spja_query(aggregate_expressions={'count': ('*',  Aggregator.COUNT)},
@@ -199,12 +207,13 @@ class JoinGraph:
     
     # replace the table name from table_prev to table_after
     def replace(self, table_prev, table_after):
-        if table_prev not in self.relation_schema:
+        if table_prev not in self.relation_info:
             raise JoinGraphException(table_prev + ' doesn\'t exist!')
-        if table_after in self.relation_schema:
+        if table_after in self.relation_info:
             raise JoinGraphException(table_after + ' already exists!')
-        self.relation_schema[table_after] = self.relation_schema[table_prev]
-        del self.relation_schema[table_prev]
+        self.relation_info[table_after] = self.relation_info[table_prev]
+        # is it safe? do we need a deep copy?
+        del self.relation_info[table_prev]
 
         for relation in self.joins:
             if table_prev in self.joins[relation]:
@@ -220,8 +229,8 @@ class JoinGraph:
         self.check_acyclic()
 
     def check_all_features_exist(self):
-        for table in self.relation_schema:
-            features = self.relation_schema[table].keys()
+        for table in self.relation_info:
+            features = self.relation_info[table]["schema"].keys()
             self.check_features_exist(table, features)
 
     def check_features_exist(self, table, features):
@@ -235,20 +244,20 @@ class JoinGraph:
     def _repr_html_(self):
         nodes = []
         links = []
-        for table_name in self.relation_schema:
-            attributes = set(self.get_useful_attributes(table_name))
-            nodes.append({"id": table_name, "attributes": list(attributes)})
-
-        # avoid edge in opposite direction
+        for relation in self.get_relations():
+            attributes = set(self.get_useful_attributes(relation))
+            nodes.append({"id": relation, "attributes": list(attributes)})
+        
         seen = set()
-        for table_name_left in self.joins:
-            for table_name_right in self.joins[table_name_left]:
-                if (table_name_right, table_name_left) in seen:
+        for relation_left in self.joins:
+            for relation_right in self.joins[relation_left]:
+                # avoid edge in opposite direction
+                if (relation_right, relation_left) in seen:
                     continue
-                keys = self.joins[table_name_left][table_name_right]['keys']
-                links.append({"source": table_name_left, "target": table_name_right, \
+                keys = self.joins[relation_left][relation_right]['keys']
+                links.append({"source": relation_left, "target": relation_right, \
                               "left_keys": keys[0], "right_keys": keys[1]})
-                seen.add((table_name_left, table_name_right))
+                seen.add((relation_left, relation_right))
 
         self.session_id += 1
 

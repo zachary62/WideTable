@@ -7,24 +7,23 @@ from .aggregator import *
 class CJT(JoinGraph):
     def __init__(self,
                  semi_ring: SemiRing,
-                 join_graph: JoinGraph,
-                 annotations: dict={}):
+                 join_graph: JoinGraph):
+        
         self.message_id = 0
         self.semi_ring = semi_ring
         # maps relation to the columns storing semi-ring. e.g., "R" -> {"s": "s", "c": "c"}
         self.semi_ring_cols = {}
+        
         super().__init__(join_graph.exe,
                          join_graph.joins,
-                         join_graph.relation_schema)
+                         join_graph.relation_info)
         
+        # cjt additionally store annotations
         # maps relation to a set of annotations
-        # {rel -> [ attr, annotation_type, value]
-        self.annotations = {}
-        
+        # self.relation_info => rel => annotation => [attr, annotation_type, value]
         # for now, treat group-by annotations specially
-        # maps relation -> [group attributes]
+        # self.relation_info => rel => groupby =>[group attributes]
         # TODO: currently assume that attribute name are unique across relations
-        self.groupby = {}
         
 
     # given the from_table and to_table, return the message in between
@@ -35,21 +34,20 @@ class CJT(JoinGraph):
         del self.joins[from_table][to_table]['message']
         self.joins[from_table][to_table]['message_type'] = 'missing'
 
-    def get_parsed_annotations(self, table):
-        if table not in self.annotations:
+    def get_parsed_annotations(self, relation):
+        if "annotation" not in self.relation_info[relation]:
             return []
-        return parse_ann({table: self.annotations[table]})
+        return parse_ann({relation: self.relation_info[relation]["annotation"]})
 
-    def get_all_parsed_annotations(self):
-        return parse_ann(self.annotations)
-
-    def add_annotations(self, relation: str, annotation, lazy=True):
+    def add_annotations(self, user_table: str, annotation, lazy=True):
         # TODO: add some check for annotation. 
         # E.g., is the referenced attribute even in the relation?
-        if relation not in self.annotations:
-            self.annotations[relation] = [annotation]
+        relation = self.get_relation_from_user_table(user_table)
+        
+        if "annotation" not in self.relation_info[relation]:
+            self.relation_info[relation]["annotation"] = [annotation]
         else:
-            self.annotations[relation].append(annotation)
+            self.relation_info[relation]["annotation"].append(annotation)
 
         if not lazy:
             for to_relation,v in self.joins[relation]:
@@ -57,12 +55,13 @@ class CJT(JoinGraph):
     
     def remove_annotations(self, relation: str, annotation, lazy=True):
         pass
-                
-    def add_groupbys(self, relation, attributes, lazy=True):
-        if relation not in self.groupby:
-            self.groupby[relation] = attributes
+    
+    def add_groupbys(self, user_table, attributes, lazy=True):
+        relation = self.get_relation_from_user_table(user_table)
+        if "groupby" not in self.relation_info[relation]:
+            self.relation_info[relation]["groupby"] = attributes
         else:
-            self.groupby[relation] += attributes
+            self.relation_info[relation]["groupby"] += attributes
 
         if not lazy:
             for to_relation,v in self.joins[relation]:
@@ -108,11 +107,7 @@ class CJT(JoinGraph):
     # this is for "what-if query"
     # copy a new cjt so the old are kept
     def copy_cjt(self, semi_ring: SemiRing):
-        annotations = copy.deepcopy(self.annotations)
-        c_cjt = CJT(semi_ring=semi_ring,
-                    join_graph=self,
-                    annotations=annotations)
-        return c_cjt
+        pass
 
     def calibration(self, root_table=None):
         # TODO: choose the first relation in the joins
@@ -161,33 +156,35 @@ class CJT(JoinGraph):
             if c_neighbor != parent_table:
                 self._send_message(currento_table, c_neighbor, m_type=m_type)
                 self._pre_dfs(c_neighbor, currento_table, m_type=m_type)
+                
+    
+    def absorption(self, user_table: str, group_by: list, order_by = [], mode=4):
+        relation = self.get_relation_from_user_table(user_table)
+        incoming_messages, join_conds = self._get_income_messages(relation)
 
-    def absorption(self, table: str, group_by: list, order_by = [], mode=4):
-        incoming_messages, join_conds = self._get_income_messages(table)
-
-        from_relations = [m['message'] for m in incoming_messages] + [table]
+        from_relations = [m['message'] for m in incoming_messages] + [relation]
         aggregate_expressions = self.semi_ring.compute_col_operations(from_relations)
         
         # TODO: this is ugly. Refactor the codes
         group_by_query = []
         for attr in group_by:
-            if attr in self.get_join_keys(table):
-                aggregate_expressions[attr] = (table + "." + attr, Aggregator.IDENTITY)
-                group_by_query.append(table + '.' + attr)
+            if attr in self.get_join_keys(relation):
+                aggregate_expressions[attr] = (relation + "." + attr, Aggregator.IDENTITY)
+                group_by_query.append(relation + '.' + attr)
             else:
                 aggregate_expressions[attr] = (attr, Aggregator.IDENTITY)
                 group_by_query.append(attr)
                 
         order_by_query = []        
         for attr in order_by:
-            if attr in self.get_join_keys(table):
-                order_by_query.append(table + '.' + attr)
+            if attr in self.get_join_keys(relation):
+                order_by_query.append(relation + '.' + attr)
             else:
                 order_by_query.append(attr)
         
         return self.exe.execute_spja_query(aggregate_expressions,
                                            from_tables=from_relations,
-                                           select_conds=join_conds+self.get_parsed_annotations(table),
+                                           select_conds=join_conds+self.get_parsed_annotations(relation),
                                            group_by=group_by_query,
                                            order_by=order_by_query,
                                            mode=mode)
@@ -239,9 +236,9 @@ class CJT(JoinGraph):
         from_join_keys, _ = self.get_join_keys(from_table, to_table)
         from_relations = [m['message'] for m in incoming_messages] + [from_table]
         from_group_bys = [attr for m in incoming_messages for attr in m['message_groupby']]
-        print(from_group_bys)
-        if from_table in self.groupby:
-            from_group_bys += self.groupby[from_table]
+        
+        if "groupby" in self.relation_info[from_table]:
+            from_group_bys += self.relation_info[from_table]["groupby"]
         
         group_by = [from_table + '.' + attr for attr in from_join_keys] \
                     + from_group_bys
@@ -278,8 +275,7 @@ class CJT(JoinGraph):
             lift_exp[attr] = (attr, Aggregator.IDENTITY)
         new_fact_name = self.exe.execute_spja_query(lift_exp,
                                                     [relation],
-                                                    mode=1,
-                                                    table_name=relation)
+                                                    mode=1)
         if relation != new_fact_name:
             self.replace(relation, new_fact_name)
     
