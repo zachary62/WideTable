@@ -24,7 +24,7 @@ class TestDashboard(unittest.TestCase):
         ).fetchall()
         measurement = dashboard.register_measurement("sum",'part','p_retailprice', scope=FullJoin())
         actual = dashboard.absorption(measurement, mode=3)
-        self.assertTrue(expected[0][0] - actual[0][0] < 1e-6)
+        self.assertTrue(abs(expected[0][0] - actual[0][0])< 1e-5)
     
     def test_single_relation(self):
         dashboard = initialize_tpch_small_dashboard()
