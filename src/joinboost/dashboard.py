@@ -1,9 +1,27 @@
 import copy
-from .semiring import *
 from .joingraph import JoinGraph
 from .cjt import CJT
 from .aggregator import *
+from .scope import *
 import pkgutil
+
+class DashBoardCJT(CJT):
+    def __init__(self,
+                 semi_ring: SemiRing,
+                 join_graph: JoinGraph,
+                 scope: Scope):
+        
+        super().__init__(semi_ring,join_graph)
+        self.scope = scope
+    
+    def prepare_message(self, from_table: str, to_table: str, m_type: Message):
+        super().prepare_message(from_table, to_table, m_type)
+        
+        from_mul = self.get_multiplicity(from_table, to_table)
+        to_mul = self.get_multiplicity(from_table, to_table)
+        m_type = self.scope.change_message_from_multiplicity(from_mul, to_mul, m_type)
+        
+        return m_type
 
 class DashBoard(JoinGraph):
     def __init__(self,
@@ -19,7 +37,7 @@ class DashBoard(JoinGraph):
         self.rep_template = data = pkgutil.get_data(__name__, "static/dashboard.html").decode('utf-8')
         
         
-    def register_semiring(self, semi_ring: SemiRing):
+    def register_semiring(self, semi_ring: SemiRing, lazy, scope):
         sem_ring_str = semi_ring.__str__()
         
         # "if semi_ring in self.cjts:" doesn't work
@@ -28,21 +46,33 @@ class DashBoard(JoinGraph):
         if sem_ring_str in self.cjts:
             raise Exception('The measurement has already been registered')
             
-        if not self.has_relation(semi_ring.get_relation()):
-            raise Exception('The join graph doesn\'t contain the relation for the measurement.')
+        if not self.has_relation(semi_ring.get_user_table()):
+            raise Exception(f'The join graph doesn\'t contain the {semi_ring.get_user_table()} for the measurement.')
         
-        self.cjts[sem_ring_str] = CJT(semi_ring=semi_ring, join_graph=self)
+        cjt = DashBoardCJT(semi_ring=semi_ring, join_graph=self, scope=scope)
+        self.cjts[sem_ring_str] = cjt
         
-        if semi_ring.get_relation() not in self.measurement:
-            self.measurement[semi_ring.get_relation()] = [semi_ring]
+        if not lazy:
+            cjt.lift_all()
+            cjt.calibration()
+        
+        if semi_ring.get_user_table() not in self.measurement:
+            self.measurement[semi_ring.get_user_table()] = [semi_ring]
         else:
-            self.measurement[semi_ring.get_relation()].append(semi_ring)
+            self.measurement[semi_ring.get_user_table()].append(semi_ring)
         
-    def register_measurement(self, name, relation, attr):
-        semi_ring = SemiRingFactory(name, relation, attr)
-        self.register_semiring(semi_ring)
-        return semi_ring
-
+    def register_measurement(self, name, relation, attr, lazy=False, scope=FullJoin()):
+        measurement = SemiRingFactory(name, relation, attr)
+        self.register_semiring(measurement, lazy, scope)
+        return measurement
+    
+    # TODO: current group-by is only on the root table
+    def absorption(self, measurement, group_by=[], order_by = [], mode=4):
+        sem_ring_str = measurement.__str__()
+        cjt = self.cjts[sem_ring_str]
+        user_table = measurement.user_table
+        return cjt.absorption(user_table=user_table, group_by=group_by, order_by=order_by, mode=mode)
+        
     '''
     node structure:
     nodes: [

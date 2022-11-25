@@ -21,7 +21,7 @@ class TestCJT(unittest.TestCase):
     """
 
     def test_many_to_many(self):
-        cjt = initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='R', attr='A'))
+        cjt = initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(user_table='R', attr='A'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(A), count(*), R.B 
@@ -43,7 +43,7 @@ class TestCJT(unittest.TestCase):
     """
 
     def test_one_to_many(self):
-        cjt = initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(relation='T', attr='K'))
+        cjt = initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(user_table='T', attr='K'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(T.K), count(*), T.B 
@@ -60,7 +60,7 @@ class TestCJT(unittest.TestCase):
     Tests upward message passing without calibration
     """
     def test_many_to_many_upward(self):
-        cjt = initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='R', attr='A'))
+        cjt = initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(user_table='R', attr='A'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(A), count(*), R.B 
@@ -73,7 +73,7 @@ class TestCJT(unittest.TestCase):
         self.assertEqual(expected, actual)
         
     def test_many_to_many_for_count_semiring(self):
-        cjt = initialize_synthetic_many_to_many(semi_ring=CountSemiRing(relation='T'))
+        cjt = initialize_synthetic_many_to_many(semi_ring=CountSemiRing(user_table='T'))
         expected = cjt.exe.conn.execute(
             """
             SELECT count(*), T.B
@@ -87,7 +87,7 @@ class TestCJT(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_many_to_many_for_sum_semiring(self):
-        cjt = initialize_synthetic_many_to_many(semi_ring=SumSemiRing(relation='T', attr='F'))
+        cjt = initialize_synthetic_many_to_many(semi_ring=SumSemiRing(user_table='T', attr='F'))
         expected = cjt.exe.conn.execute(
             """
             SELECT sum(T.F), T.B

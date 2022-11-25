@@ -164,7 +164,7 @@ class CJT(JoinGraph):
                 self._pre_dfs(c_neighbor, current_table, m_type=m_type)
                 
     
-    def absorption(self, user_table: str, group_by: list, order_by = [], mode=4):
+    def absorption(self, user_table: str, group_by = [], order_by = [], mode=4):
         relation = self.get_relation_from_user_table(user_table)
         incoming_messages, join_conds = self._get_income_messages(relation)
 
@@ -222,9 +222,15 @@ class CJT(JoinGraph):
                                table + "." + r_join_keys[i] for i in range(len(from_join_keys))]
                 
         return incoming_messages, join_conds
-
-    # 3 message types: identity, selection, FULL
+    
+    def prepare_message(self, from_table: str, to_table: str, m_type: Message):
+        if m_type == Message.UNDECIDED:
+            m_type = Message.FULL
+        return m_type
+    
     def _send_message(self, from_table: str, to_table: str, m_type: Message = Message.FULL):
+        m_type = self.prepare_message(from_table, to_table, m_type)
+        
         print('--Sending Message from', from_table, 'to', to_table, 'm_type is', m_type)
         # identity message optimization
         if m_type == Message.IDENTITY:
@@ -236,9 +242,6 @@ class CJT(JoinGraph):
 
         # join with incoming messages
         incoming_messages, join_conds = self._get_income_messages(from_table, to_table)
-
-        if m_type == Message.UNDECIDED:
-            m_type = Message.FULL
 
         # get the group_by key for this message
         from_join_keys, _ = self.get_join_keys(from_table, to_table)
@@ -252,7 +255,7 @@ class CJT(JoinGraph):
                     + from_group_bys
         
         # compute aggregation
-        aggregation = (self.semi_ring.compute_col_operations(relations=from_relations)
+        aggregation = (self.semi_ring.compute_col_operations(from_relations)
                        if m_type == Message.FULL else {})
         
         # TODO: this is ugly! fix it such that "for attr in group_by" works
@@ -277,7 +280,7 @@ class CJT(JoinGraph):
             raise ValueError("Invalid relation")
         
         user_table = self.get_user_table(relation)
-        lift_exp = self.semi_ring.lift_exp(relation=user_table)
+        lift_exp = self.semi_ring.lift_exp(user_table=user_table)
         
         # copy the remaining attributes as they are (no aggregation)
         for attr in self.get_useful_attributes(relation):

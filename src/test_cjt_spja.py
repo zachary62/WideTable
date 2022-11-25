@@ -22,7 +22,7 @@ class TestCJT(unittest.TestCase):
     """
 
     def test_one_to_many_with_selection(self):
-        cjt = initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(relation='T', attr='K'))
+        cjt = initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(user_table='T', attr='K'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(T.K), count(*), T.B 
@@ -38,7 +38,7 @@ class TestCJT(unittest.TestCase):
         self.assertEqual(expected, actual)
         
     def test_many_to_many_with_selection(self):
-        cjt = initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='R', attr='A'))
+        cjt = initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(user_table='R', attr='A'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(A), count(*), R.B 
@@ -57,7 +57,7 @@ class TestCJT(unittest.TestCase):
     Tests if message passing works in join graph with groupby.
     """
     def test_one_to_many_with_groupby(self):
-        cjt = initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(relation='T', attr='K'))
+        cjt = initialize_synthetic_one_to_many(semi_ring=AvgSemiRing(user_table='T', attr='K'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(T.K), count(*), T.B, S.E
@@ -72,7 +72,7 @@ class TestCJT(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_many_to_many_with_groupby(self):
-        cjt = initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(relation='T', attr='F'))
+        cjt = initialize_synthetic_many_to_many(semi_ring=AvgSemiRing(user_table='T', attr='F'))
         expected = cjt.exe.conn.execute(
             """
             SELECT SUM(T.F), count(*), T.B, S.E

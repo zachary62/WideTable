@@ -84,7 +84,7 @@ class JoinGraph:
     # add relation and attributes to join graph
     def add_relation(self,
                      relation: str,
-                     attrs: list = [],
+                     attrs: list = None,
                      relation_address = None):
 
         self.exe.add_table(relation, relation_address)
@@ -94,7 +94,10 @@ class JoinGraph:
             self.relation_info[relation] = {}
             self.relation_info[relation]["schema"] = {}
             self.relation_info[relation]["user_table"] = relation
-
+        
+        if attrs is None:
+            attrs = self.exe.get_schema(relation)
+            
         for x in attrs:
             self.relation_info[relation]["schema"][x] = ""
 

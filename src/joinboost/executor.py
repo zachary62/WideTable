@@ -94,7 +94,7 @@ class DuckdbExecutor(Executor):
                            select_conds: list = [],
                            group_by: list = [], 
                            window_by: list = [],
-                           order_by: str = None,
+                           order_by: list = [],
                            limit: int = None,
                            sample_rate: float = None,
                            replace: bool = True,
@@ -150,7 +150,7 @@ class DuckdbExecutor(Executor):
                    select_conds: list = [],
                    window_by: list = [],
                    group_by: list = [], 
-                   order_by: str = None,
+                   order_by: list = [],
                    limit: int = None,
                    sample_rate: float = None,
                    ):
@@ -172,7 +172,7 @@ class DuckdbExecutor(Executor):
             sql += 'WINDOW joinboost_window AS (ORDER BY ' + ','.join(window_by) + ')\n'
         if len(group_by) > 0:
             sql += "GROUP BY " + ",".join(group_by) + '\n'
-        if order_by is not None:
+        if len(order_by) > 0:
             sql += 'ORDER BY ' + ",".join(order_by) + '\n'
         if limit is not None:
             sql += 'LIMIT ' + str(limit) + '\n'
