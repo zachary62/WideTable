@@ -36,7 +36,7 @@ class TestDashboard(unittest.TestCase):
         ).fetchall()
         measurement = dashboard.register_measurement("sum",'partsupp','ps_availqty', scope=SingleRelation('partsupp'))
         actual = dashboard.absorption(measurement, mode=3)
-        self.assertTrue(expected[0][0] - actual[0][0] < 1e-6)
+        self.assertTrue(abs(expected[0][0] - actual[0][0])< 1e-5)
         
     def test_replicate_fact_1(self):
         dashboard = initialize_tpch_small_dashboard()
