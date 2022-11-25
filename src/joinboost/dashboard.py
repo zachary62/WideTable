@@ -16,11 +16,7 @@ class DashBoardCJT(CJT):
     
     def prepare_message(self, from_table: str, to_table: str, m_type: Message):
         super().prepare_message(from_table, to_table, m_type)
-        
-        from_mul = self.get_multiplicity(from_table, to_table)
-        to_mul = self.get_multiplicity(from_table, to_table)
-        m_type = self.scope.change_message_from_multiplicity(from_mul, to_mul, m_type)
-        
+        m_type = self.scope.change_message(from_table, to_table, m_type, self)
         return m_type
 
 class DashBoard(JoinGraph):
@@ -37,15 +33,16 @@ class DashBoard(JoinGraph):
         self.rep_template = data = pkgutil.get_data(__name__, "static/dashboard.html").decode('utf-8')
         
         
-    def register_semiring(self, semi_ring: SemiRing, lazy, scope):
+    def register_semiring(self, semi_ring: SemiRing, lazy, scope, replace):
         sem_ring_str = semi_ring.__str__()
         
         # "if semi_ring in self.cjts:" doesn't work
         # I have to pass in the string to avoid duplicates
         # Look dumb and need to check out why.
-        if sem_ring_str in self.cjts:
+        if sem_ring_str in self.cjts and not replace:
             raise Exception('The measurement has already been registered')
             
+        # TODO: move this to semi-ring preprocess
         if not self.has_relation(semi_ring.get_user_table()):
             raise Exception(f'The join graph doesn\'t contain the {semi_ring.get_user_table()} for the measurement.')
         
@@ -61,9 +58,10 @@ class DashBoard(JoinGraph):
         else:
             self.measurement[semi_ring.get_user_table()].append(semi_ring)
         
-    def register_measurement(self, name, relation, attr, lazy=False, scope=FullJoin()):
+    def register_measurement(self, name, relation, attr, lazy=False, scope=FullJoin(), replace=False):
         measurement = SemiRingFactory(name, relation, attr)
-        self.register_semiring(measurement, lazy, scope)
+        scope.preprocess(self)
+        self.register_semiring(measurement, lazy, scope, replace)
         return measurement
     
     # TODO: current group-by is only on the root table

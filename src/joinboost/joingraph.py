@@ -54,7 +54,7 @@ class JoinGraph:
     
     # given a user_table, find the table name in the database
     def get_relation_from_user_table(self, user_table):
-        for relation in self.get_relations():
+        for relation in self.relation_info:
             if user_table == self.relation_info[relation]["user_table"]:
                 return relation
         return None
@@ -124,7 +124,6 @@ class JoinGraph:
             return self.joins[from_table][to_table]["multiplicity"]
         else:
             return "M" if (self.joins[from_table][to_table]["multiplicity"] > 1) else "1"
-        
     
     def get_missing_keys(self, from_table, to_table):
         return self.joins[from_table][to_table]["missing_keys"]
