@@ -70,7 +70,19 @@ class DashBoard(JoinGraph):
         cjt = self.cjts[sem_ring_str]
         user_table = measurement.user_table
         return cjt.absorption(user_table=user_table, group_by=group_by, order_by=order_by, mode=mode)
+    
+    def highlightRelation(self, measurement, relation):
+        # find the scope of this measurement
+        sem_ring_str = measurement.__str__()
+        scope = self.cjts[sem_ring_str].scope
+        return scope.highlightRelation(relation)
         
+    def highlightEdge(self, measurement, from_table, to_tabl):
+        # find the scope of this measurement
+        sem_ring_str = measurement.__str__()
+        scope = self.cjts[sem_ring_str].scope
+        return scope.highlightEdge(from_table, to_tabl)
+    
     '''
     node structure:
     nodes: [
@@ -80,7 +92,6 @@ class DashBoard(JoinGraph):
             join_keys: [
                 {
                     key: col1
-                    TODO:
                     multiplicity: many/one
                 },
             ],
@@ -93,10 +104,14 @@ class DashBoard(JoinGraph):
             source: node_id,
             left_keys: [key1, key2, ...],
             dest: node_id,
-            right_keys: [key1, key2, ...]
+            right_keys: [key1, key2, ...],
         }
     ]
     
+    Edge and relation also stores:
+            highlight: true/false (control the opacity)
+            color: black by default
+    These two can be updated in js function through interaction
     '''
 
     def _repr_html_(self):

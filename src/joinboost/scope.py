@@ -11,6 +11,14 @@ class Scope(ABC):
     def preprocess(self, joingraph):
         pass
     
+    # for visualization, return whether it should be highlighted, and the color
+    # if color is None, then use the default color
+    def highlightEdge(self, from_table, to_table):
+        return True, None
+    
+    def highlightRelation(self, table):
+        return True, None
+    
 class FullJoin(Scope):
     pass
     
@@ -20,7 +28,16 @@ class SingleRelation(Scope):
         
     def change_message(self, from_table, to_table, m_type, joingraph):
         return Message.IDENTITY
-        
+    
+    # for visualization, return whether it should be highlighted, and the color
+    def highlightEdge(self, from_table, to_table):
+        return False, None
+    
+    def highlightRelation(self, relation):
+        if relation == self.relation:
+            return True, None
+        return False, None
+    
 class ReplicateFact(Scope):
     def __init__(self, relation, fact):
         # the relation
@@ -70,6 +87,18 @@ class ReplicateFact(Scope):
         if (from_table, to_table) in self.edges or (to_table, from_table) in self.edges:
             return m_type
         return Message.IDENTITY
+    
+    # for visualization, return whether it should be highlighted, and the color
+    def highlightEdge(self, from_table, to_table):
+        if (from_table, to_table) in self.edges or (to_table, from_table) in self.edges:
+            return True, None
+        return False, None
+    
+    def highlightRelation(self, relation):
+        for from_table, to_table in self.edges:
+            if relation == from_table or relation == to_table:
+                return True, None
+        return False, None
     
 class AverageAttribution(Scope):
     def __init__(self):
