@@ -2,10 +2,10 @@ import unittest
 
 import duckdb
 
-from joinboost.cjt import CJT
-from joinboost.joingraph import JoinGraph
-from joinboost.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
-from joinboost.aggregator import Annotation
+from widetable.cjt import CJT
+from widetable.joingraph import JoinGraph
+from widetable.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
+from widetable.aggregator import Annotation
 from test_utils import initialize_synthetic_one_to_many, initialize_synthetic_many_to_many
 
 
@@ -31,8 +31,11 @@ class TestCJT(unittest.TestCase):
             GROUP BY T.B ORDER BY T.B
             """
         ).fetchall()
-        cjt.add_annotations('S', ['E', Annotation.NOT_DISTINCT, '2'])
         cjt.lift_all()
+        cjt.calibration()
+        cjt.add_annotations('S', ['E', Annotation.NOT_DISTINCT, '2'])
+        cjt.calibration()
+        # redundant calibration should not break 
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
         self.assertEqual(expected, actual)
@@ -46,9 +49,11 @@ class TestCJT(unittest.TestCase):
             WHERE S.B = 2
             GROUP BY R.B ORDER BY R.B
             """).fetchall()
-
-        cjt.add_annotations('S', ['B', Annotation.NOT_DISTINCT, '2'])
+        
         cjt.lift_all()
+        cjt.calibration()
+        cjt.add_annotations('S', ['B', Annotation.NOT_DISTINCT, '2'])
+        cjt.calibration()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
         self.assertEqual(expected, actual)
@@ -65,8 +70,11 @@ class TestCJT(unittest.TestCase):
             GROUP BY T.B, S.E ORDER BY T.B, E
             """
         ).fetchall()
-        cjt.add_groupbys('S', 'E')
         cjt.lift_all()
+        cjt.calibration()
+        cjt.add_groupbys('S', 'E')
+        cjt.calibration()
+        # redundant calibration should not break 
         cjt.calibration()
         actual = cjt.absorption('T', ['B', 'E'], ['B', 'E'], mode=3)
         self.assertEqual(expected, actual)
@@ -80,9 +88,12 @@ class TestCJT(unittest.TestCase):
             GROUP BY T.B, S.E ORDER BY T.B, E
             """
         ).fetchall()
-        cjt.add_groupbys('S', 'E')
         cjt.lift_all()
-        cjt.upward_message_passing(user_table='T')
+        cjt.calibration()
+        cjt.add_groupbys('S', 'E')
+        # upward message passing is using internal table name 
+        # because it is supposed to be an internal function
+        cjt.upward_message_passing(cjt.get_relation_from_user_table('T'))
         actual = cjt.absorption('T', ['B', 'E'], ['B', 'E'], mode=3)
         self.assertEqual(expected, actual)
         

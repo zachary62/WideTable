@@ -2,12 +2,12 @@ import unittest
 
 import duckdb
 
-from joinboost.cjt import CJT
-from joinboost.joingraph import JoinGraph
-from joinboost.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
-from joinboost.aggregator import Annotation
+from widetable.cjt import CJT
+from widetable.joingraph import JoinGraph
+from widetable.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
+from widetable.aggregator import Annotation
 from test_utils import initialize_tpch_small_dashboard
-from joinboost.scope import *
+from widetable.scope import *
 
 
 class TestDashboard(unittest.TestCase):
@@ -59,5 +59,16 @@ class TestDashboard(unittest.TestCase):
         self.assertTrue(("part", "partsupp") in scope.edges or ("partsupp", "part") in scope.edges)
         self.assertFalse(("lineitem", "partsupp") in scope.edges or ("partsupp", "lineitem") in scope.edges)
     
+    # need better experiment after solving the missin join key problem
+    # the value should be the same as over single table
+    def test_average_attribution(self):
+        dashboard = initialize_tpch_small_dashboard()
+        scope = AverageAttribution("partsupp")
+        measurement = dashboard.register_measurement("avg",'partsupp','ps_availqty', scope=scope)
+        expected = dashboard.absorption(measurement, mode=3, user_table = "lineitem")
+        actual = dashboard.absorption(measurement, mode=3, user_table = "partsupp")
+        self.assertTrue(abs(expected[0][0] - actual[0][0])< 1e-1)
+        self.assertTrue(abs(expected[0][1] - actual[0][1])< 1e-1)
+        
 if __name__ == '__main__':
     unittest.main()

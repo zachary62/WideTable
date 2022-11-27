@@ -1,11 +1,11 @@
 import duckdb
 
-from joinboost.cjt import CJT
-from joinboost.joingraph import JoinGraph
-from joinboost.semiring import AvgSemiRing
-from joinboost.aggregator import Annotation
-from joinboost.dashboard import DashBoard
-from joinboost.scope import *
+from widetable.cjt import CJT
+from widetable.joingraph import JoinGraph
+from widetable.semiring import AvgSemiRing
+from widetable.aggregator import Annotation
+from widetable.dashboard import DashBoard
+from widetable.scope import *
 
 # semi_ring=AvgSemiRing(relation='R', attr='A')
 # duck_db_conn = duckdb.connect(database=':memory:')

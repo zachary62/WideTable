@@ -29,16 +29,19 @@ class CJT(JoinGraph):
     def get_message(self, from_table: str, to_table: str):
         return self.joins[from_table][to_table]['message']
 
-    def delete_message(self, from_table: str, to_table: str):
-        del self.joins[from_table][to_table]['message']
+    def delete_message(self, from_table: str, to_table: str, lazy=True):
+        if 'message' in self.joins[from_table][to_table]:
+            del self.joins[from_table][to_table]['message']
         self.joins[from_table][to_table]['message_type'] = Message.UNDECIDED
+        if not lazy:
+            self.exe.delete_table(message_name)
 
     def get_parsed_annotations(self, relation):
         if "annotation" not in self.relation_info[relation]:
             return []
         return parse_ann({relation: self.relation_info[relation]["annotation"]})
 
-    def add_annotations(self, user_table: str, annotation, lazy=True):
+    def add_annotations(self, user_table: str, annotation):
         # TODO: add some check for annotation. 
         # E.g., is the referenced attribute even in the relation?
         relation = self.get_relation_from_user_table(user_table)
@@ -47,10 +50,8 @@ class CJT(JoinGraph):
             self.relation_info[relation]["annotation"] = [annotation]
         else:
             self.relation_info[relation]["annotation"].append(annotation)
-
-        if not lazy:
-            for to_relation,v in self.joins[relation]:
-                self.invalidate_message(relation, to_relation)
+        # invalidate messages from this relation
+        self.downward_message_passing(relation, Message.UNDECIDED)
     
     def remove_annotations(self, relation: str, annotation, lazy=True):
         pass
@@ -61,20 +62,17 @@ class CJT(JoinGraph):
             self.relation_info[relation]["groupby"] = attributes
         else:
             self.relation_info[relation]["groupby"] += attributes
-
-        if not lazy:
-            for to_relation,v in self.joins[relation]:
-                self.invalidate_message(relation, to_relation)
+        # invalidate messages from this relation
+        self.downward_message_passing(relation, Message.UNDECIDED)
                 
     def remove_groupbys(self, relation, attributes, lazy=True):
         pass
 
-    def invalidate_message(self, from_table, to_table, lazy:bool):
+    def invalidate_message(self, from_table, to_table):
 
         message_name = self.get_message(from_table, to_table)
         self.delete_message(from_table, to_table)
-        if not lazy:
-            self.exe.delete_table(message_name)
+        
 
     # TODO: check relation to leave is a leaf node in the join graph.
     def remove_relation(self, relation):
@@ -114,33 +112,23 @@ class CJT(JoinGraph):
             # currently below doesn't pass test. check why
             root_table = self.get_relations()[0]
 #             raise ValueError("root table can not be None")
+        print(f'-- Calibration rooted {self.get_user_table(root_table)}')
         self.upward_message_passing(root_table, m_type=Message.FULL)
         self.downward_message_passing(root_table, m_type=Message.FULL)
-        
-    # TODO: for both upward and downward message passing, check if it current exist, and skip if yes.
+    
     def downward_message_passing(self,
-                                 rooto_table=None,
-                                 user_table=None,
-                                 m_type: Message = Message.UNDECIDED):
-        msgs = []
-        if not rooto_table:
-            if not user_table:
-                raise ValueError("root table and user table can not be both None")
-            root_table = self.get_relation_from_user_table(user_table)
-            
-        self._pre_dfs(rooto_table, m_type=m_type)
-        return msgs
+                                 root_table,
+                                 m_type: Message = Message.FULL):
+        self._pre_dfs(root_table, m_type=m_type)
     
     def upward_message_passing(self, 
-                               root_table=None, 
-                               user_table=None,
-                               m_type: Message = Message.UNDECIDED):
-        if not root_table:
-            if not user_table:
-                raise ValueError("root table and user table can not be both None")
-            root_table = self.get_relation_from_user_table(user_table)
-            
+                               root_table, 
+                               m_type: Message = Message.FULL):
         self._post_dfs(root_table, m_type=m_type)
+    
+    def message_cached(self, from_table, to_table, m_type):
+        return self.joins[from_table][to_table]['message_type'] == m_type
+        
 
     def _post_dfs(self, current_table: str,
                   parent_table: str = None,
@@ -150,7 +138,7 @@ class CJT(JoinGraph):
         for c_neighbor in self.joins[current_table]:
             if c_neighbor != parent_table:
                 self._post_dfs(c_neighbor, current_table, m_type=m_type)
-        if parent_table:
+        if parent_table and not self.message_cached(current_table, parent_table, m_type):
             self._send_message(from_table=current_table, to_table=parent_table, m_type=m_type)
 
     def _pre_dfs(self, current_table: str,
@@ -160,7 +148,8 @@ class CJT(JoinGraph):
             return
         for c_neighbor in self.joins[current_table]:
             if c_neighbor != parent_table:
-                self._send_message(current_table, c_neighbor, m_type=m_type)
+                if not self.message_cached(current_table, c_neighbor, m_type):
+                    self._send_message(current_table, c_neighbor, m_type=m_type)
                 self._pre_dfs(c_neighbor, current_table, m_type=m_type)
                 
     
@@ -169,7 +158,7 @@ class CJT(JoinGraph):
         incoming_messages, join_conds = self._get_income_messages(relation)
 
         from_relations = [m['message'] for m in incoming_messages] + [relation]
-        aggregate_expressions = self.semi_ring.compute_col_operations(from_relations)
+        aggregate_expressions = self.semi_ring.sum_over_product(from_relations)
         
         # TODO: this is ugly. Refactor the codes
         group_by_query = []
@@ -201,25 +190,26 @@ class CJT(JoinGraph):
                              table: str, 
                              excluded_table: str = ''):
         incoming_messages, join_conds = [], []
-        for neighbour_table in self.joins[table]:
-            if neighbour_table != excluded_table:
-                incoming_message = self.joins[neighbour_table][table]
-                
-                # there is no incoming message
-                if 'message_type' not in incoming_message or \
-                    incoming_message['message_type'] == Message.UNDECIDED:
-                    raise Exception(f'The incoming message from {neighbour_table} to {table} is not found. Have you calibrated?')
-                if 'message_type' in incoming_message and \
-                    incoming_message['message_type'] == Message.IDENTITY:
-                    continue
-                
+        if table in self.joins:
+            for neighbour_table in self.joins[table]:
+                if neighbour_table != excluded_table:
+                    incoming_message = self.joins[neighbour_table][table]
 
-                # get the join conditions between from_table and incoming_message
-                from_join_keys, r_join_keys = self.get_join_keys(neighbour_table, table)
-                incoming_messages.append(incoming_message)
+                    # there is no incoming message
+                    if 'message_type' not in incoming_message or \
+                        incoming_message['message_type'] == Message.UNDECIDED:
+                        raise Exception(f'The incoming message from {neighbour_table} to {table} is not found. Have you calibrated?')
+                    if 'message_type' in incoming_message and \
+                        incoming_message['message_type'] == Message.IDENTITY:
+                        continue
 
-                join_conds += [incoming_message["message"] + "." + from_join_keys[i] + " IS NOT DISTINCT FROM " +
-                               table + "." + r_join_keys[i] for i in range(len(from_join_keys))]
+
+                    # get the join conditions between from_table and incoming_message
+                    from_join_keys, r_join_keys = self.get_join_keys(neighbour_table, table)
+                    incoming_messages.append(incoming_message)
+
+                    join_conds += [incoming_message["message"] + "." + from_join_keys[i] + " IS NOT DISTINCT FROM " +
+                                   table + "." + r_join_keys[i] for i in range(len(from_join_keys))]
                 
         return incoming_messages, join_conds
     
@@ -229,9 +219,16 @@ class CJT(JoinGraph):
         return m_type
     
     def _send_message(self, from_table: str, to_table: str, m_type: Message = Message.FULL):
+        
+        print(f'--Sending Message from {self.get_user_table(from_table)} to {self.get_user_table(to_table)} m_type is {m_type}')
+        
+        # if undecided, it is speical message to invalidate the old messages
+        if m_type == Message.UNDECIDED:
+            self.delete_message(from_table, to_table)
+            return
+        
         m_type = self.prepare_message(from_table, to_table, m_type)
         
-        print('--Sending Message from', from_table, 'to', to_table, 'm_type is', m_type)
         # identity message optimization
         if m_type == Message.IDENTITY:
             self.joins[from_table][to_table].update({'message_type': m_type,})
@@ -255,7 +252,7 @@ class CJT(JoinGraph):
                     + from_group_bys
         
         # compute aggregation
-        aggregation = (self.semi_ring.compute_col_operations(from_relations)
+        aggregation = (self.semi_ring.sum_over_product(from_relations)
                        if m_type == Message.FULL else {})
         
         # TODO: this is ugly! fix it such that "for attr in group_by" works
@@ -274,22 +271,31 @@ class CJT(JoinGraph):
         self.joins[from_table][to_table].update({'message': message_name, 
                                                  'message_type': m_type,
                                                  'message_groupby': from_group_bys})
-
-    def lift(self, relation):
+        
+    # for simple lift expression, view is more efficient
+    def lift(self, relation, mode=2):
+        print(f'-- lift {relation} ')
         if relation is None:
             raise ValueError("Invalid relation")
         
+        # user_table and relation should be the same before lifting
         user_table = self.get_user_table(relation)
         lift_exp = self.semi_ring.lift_exp(user_table=user_table)
         
         # copy the remaining attributes as they are (no aggregation)
         for attr in self.get_useful_attributes(relation):
             lift_exp[attr] = (attr, Aggregator.IDENTITY)
-        new_fact_name = self.exe.execute_spja_query(lift_exp,
+        
+        new_relation = self.exe.execute_spja_query(lift_exp,
                                                     [relation],
-                                                    mode=1)
-        if relation != new_fact_name:
-            self.replace(relation, new_fact_name)
+                                                    mode=mode)
+        if relation != new_relation:
+            self.replace(relation, new_relation)
+        
+        self.lift_post_process(new_relation)
+    
+    def lift_post_process(self, relation):
+        pass
     
     def lift_all(self):
         for relation in self.get_relations():

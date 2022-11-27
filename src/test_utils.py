@@ -1,15 +1,23 @@
 import duckdb
 
-from joinboost.cjt import CJT
-from joinboost.joingraph import JoinGraph
-from joinboost.semiring import AvgSemiRing
-from joinboost.dashboard import DashBoard
+from widetable.cjt import CJT
+from widetable.joingraph import JoinGraph
+from widetable.semiring import AvgSemiRing
+from widetable.dashboard import DashBoard
+
+
+def initialize_synthetic_single(semi_ring=AvgSemiRing()):
+    duck_db_conn = duckdb.connect(database=':memory:')
+    join_graph = JoinGraph(duck_db_conn)
+    cjt = CJT(semi_ring=semi_ring, join_graph=join_graph)
+    cjt.add_relation('R', attrs=["A", "D", "H"], relation_address='../data/synthetic-one-to-many/R.csv')
+    return cjt
+
 
 """
 Join Graph for data/synthetic-one_to_many/
 R(ABDH) - T(BFK) - S(FE)
 """
-
 def initialize_synthetic_one_to_many(semi_ring=AvgSemiRing()):
     duck_db_conn = duckdb.connect(database=':memory:')
     join_graph = JoinGraph(duck_db_conn)
@@ -25,7 +33,7 @@ def initialize_synthetic_one_to_many(semi_ring=AvgSemiRing()):
     Join Graph for data/synthetic-many-to-many/
     S(BE) - T(BF) - R(ABDH) 
     """
-
+    
 
 def initialize_synthetic_many_to_many(semi_ring=AvgSemiRing()):
     duck_db_conn = duckdb.connect(database=':memory:')

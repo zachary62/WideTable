@@ -34,11 +34,11 @@ def parse_agg(agg, para):
         _tmp = ['CAST(' + val + ' AS DOUBLE)' for val in para]
         return '*'.join(_tmp) 
     elif agg.value == Aggregator.SUB.value:
-        assert isinstance(para, tuple)
+        assert isinstance(para, tuple) or isinstance(para, list)
         return str(para[0]) + ' - ' + str(para[1])
     elif agg.value == Aggregator.DIV.value:
-        assert isinstance(para, tuple)
-        return str(para[0]) + ' / ' + str(para[1])
+        assert isinstance(para, tuple) or isinstance(para, list)
+        return f'{para[0]}/cast({para[1]} as float)'
     elif agg.value == Aggregator.MAX.value:
         assert isinstance(para, str)
         return 'MAX(' + para + ')'

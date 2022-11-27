@@ -2,15 +2,29 @@ import unittest
 
 import duckdb
 
-from joinboost.cjt import CJT
-from joinboost.joingraph import JoinGraph
-from joinboost.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
-from joinboost.aggregator import Annotation
-from test_utils import initialize_synthetic_one_to_many, initialize_synthetic_many_to_many
+from widetable.cjt import CJT
+from widetable.joingraph import JoinGraph
+from widetable.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
+from widetable.aggregator import Annotation
+from test_utils import *
 
 
 class TestCJT(unittest.TestCase):
 
+    def test_single(self):
+        cjt = initialize_synthetic_single(semi_ring=AvgSemiRing(user_table='R', attr='A'))
+        expected = cjt.exe.conn.execute(
+            """
+            SELECT SUM(A), count(*)
+            FROM R
+            """).fetchall()
+        cjt.lift_all()
+        cjt.calibration()
+        # redundant calibration should not break 
+        cjt.calibration()
+        actual = cjt.absorption('R', mode=3)
+        self.assertEqual(expected, actual)
+    
     """
     Tests if message passing works in many to many join graph.
     Following tables have many to many multiplicity on B.
@@ -29,6 +43,8 @@ class TestCJT(unittest.TestCase):
             GROUP BY R.B ORDER BY R.B
             """).fetchall()
         cjt.lift_all()
+        cjt.calibration()
+        # redundant calibration should not break 
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
         self.assertEqual(expected, actual)
@@ -96,6 +112,8 @@ class TestCJT(unittest.TestCase):
             """
         ).fetchall()
         cjt.lift_all()
+        # redundant calibration should not break 
+        cjt.calibration()
         cjt.calibration()
         actual = cjt.absorption('T', ['B'], ['B'], mode=3)
         self.assertEqual(expected, actual)

@@ -46,7 +46,7 @@ class JoinGraph:
     def get_relation_attributes(self, relation):
         return list(self.relation_info[relation]["schema"].keys())
     
-    def get_relation_from_attribute(self, attribute):
+    def get_relations_from_attribute(self, attribute):
         relations = []
         for relation in self.relation_info:
             if attribute in self.relation_info[relation]["schema"].keys():

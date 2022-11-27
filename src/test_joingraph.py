@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 import test_utils
-from joinboost.joingraph import JoinGraph, JoinGraphException
+from widetable.joingraph import JoinGraph, JoinGraphException
 
 
 class TestJoingraph(unittest.TestCase):

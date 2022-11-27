@@ -19,6 +19,9 @@ class Scope(ABC):
     def highlightRelation(self, table):
         return True, None
     
+    def normalize(self, relation):
+        return None
+    
 class FullJoin(Scope):
     pass
     
@@ -43,6 +46,7 @@ class ReplicateFact(Scope):
         # the relation
         self.relation = relation
         self.fact = fact
+        # stores which subtree is valid for queries
         self.edges = set()
     
     def preprocess(self, joingraph):
@@ -77,7 +81,6 @@ class ReplicateFact(Scope):
                         self.edges.add((current_table, c_neighbor))
                         dfs_many_to_one(c_neighbor, current_table)
         dfs_many_to_one(self.relation)
-        print(self.edges)
    
     def change_message(self, from_table, to_table, m_type, joingraph):
         # table gets renamed after lift
@@ -101,8 +104,46 @@ class ReplicateFact(Scope):
         return False, None
     
 class AverageAttribution(Scope):
-    def __init__(self):
-        pass
+    def __init__(self, relation):
+        self.relation = relation
+        # stores which edges require attribution
+        self.edges = set()
+        self.highlightcolor = "red"
+        
+    def preprocess(self, joingraph):
+        # check if there is a path from relation that causes duplication
+        def dfs(current_table, parent_table = None):
+            for c_neighbor in joingraph.joins[current_table]:
+                if c_neighbor != parent_table:
+                    mul = joingraph.get_multiplicity(c_neighbor, current_table, simple=True) 
+                    if mul == 'M':
+                        # add the path to edges
+                        self.edges.add((current_table, c_neighbor))
+                    dfs(c_neighbor, current_table)
+        dfs(self.relation)   
+        
+    # TODO: because of normalization, we can introduce identity message
+    # need to be careful about missing join keys
+    def change_message(self, from_table, to_table, m_type, joingraph):
+        return m_type
+    
+    # for visualization, return whether it should be highlighted, and the color
+    def highlightEdge(self, from_table, to_table):
+        if (from_table, to_table) in self.edges or (to_table, from_table) in self.edges:
+            return True, self.highlightcolor
+        return True, None
+    
+    def highlightRelation(self, relation):
+        for from_table, to_table in self.edges:
+            if relation == to_table:
+                return True, self.highlightcolor
+        return True, None
+    
+    def normalize(self, relation):
+        for from_table, to_table in self.edges:
+            if relation == to_table:
+                return from_table
+        return None
     
 #     def change_message(self, from_table, to_table, m_type, joingraph):
 #         from_mul = self.get_multiplicity(from_table, to_table)

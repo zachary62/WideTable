@@ -28,25 +28,18 @@ class SemiRing(ABC):
     def __init__(self):
         pass
 
-    def __add__(self, other):
-        pass
-
-    def __sub__(self, other):
-        pass
-
-    def multiplication(self, semi_ring):
-        pass
-
     def lift_exp(self, attr):
         pass
-
-    def lift_addition(self, attr, constant_):
+    
+    # this is a bit ill defined
+    # it is only for semi-ring aggregation over attributes in a single table
+    def get_user_table(self):
         pass
 
-    def get_sr_in_select(self, m_type: Message, f_table: str, in_msgs: list, f_table_attrs: list):
+    def sum_over_product(self, user_tables=[]):
         pass
-
-    def compute_col_operations(self, user_tables=[], s_after='s', c_after='c', s='s', c='c'):
+    
+    def sum_col(self, user_table):
         pass
 
     def __str__(self):
@@ -54,6 +47,10 @@ class SemiRing(ABC):
     
     def __hash__(self):
         return self.__str__().__hash__ ()
+
+class SemiField(SemiRing):
+    def division(self, dividend, divisor):
+        pass
 
 
 class SumSemiRing(SemiRing):
@@ -67,12 +64,15 @@ class SumSemiRing(SemiRing):
         else:
             return {s_after: ("1", Aggregator.IDENTITY)}
 
-    def compute_col_operations(self, user_tables=[], s='s', s_after='s'):
+    def sum_over_product(self, user_tables=[], s='s', s_after='s'):
         sum_join_calculation = {}
         for i, user_table in enumerate(user_tables):
             sum_join_calculation[f'"{user_table}"'] = f'"{s}"'
 
         return {s_after: (sum_join_calculation, Aggregator.SUM_PROD)}
+    
+    def sum_col(self, user_table):
+        self.sum_over_product([user_table])
     
     def get_user_table(self):
         return self.user_table
@@ -81,7 +81,7 @@ class SumSemiRing(SemiRing):
         return f'SUM({self.user_table}.{self.attr})'
 
 
-class CountSemiRing(SemiRing):
+class CountSemiRing(SemiField):
 
     def __init__(self, user_table=""):
         self.user_table = user_table
@@ -89,29 +89,31 @@ class CountSemiRing(SemiRing):
     def lift_exp(self, user_table="", c_after='c'):
         return {c_after: ('1', Aggregator.IDENTITY)}
 
-    def compute_col_operations(self, user_tables=[], c='c', c_after='c'):
+    def sum_over_product(self, user_tables=[], c='c', c_after='c'):
         annotated_count = {}
         for i, user_table in enumerate(user_tables):
             annotated_count[f'"{user_table}"'] = f'"{c}"'
         return {c_after: (annotated_count, Aggregator.SUM_PROD)}
     
+    def sum_col(self, user_table):
+        return self.sum_over_product([user_table])
+    
     def get_user_table(self):
         return self.user_table
+    
+    def division(self, dividend, divisor, c='c', c_after='c'):
+        return {c_after: ([f'"{dividend}"."{c}"', f'"{divisor}"."{c}"'], Aggregator.DIV)}
     
     def __str__(self):
         return f'COUNT({self.user_table}.1)'
 
 
-class AvgSemiRing(SemiRing):
+class AvgSemiRing(SemiField):
 
     def __init__(self, user_table="", attr=""):
         self.user_table = user_table
         self.attr = attr
-
-    def multiplication(self, semi_ring):
-        s, c = semi_ring.get_value()
-        self.r_pair = (self.r_pair[0] * c + self.r_pair[1] * s, c * self.r_pair[1])
-
+        
     def lift_exp(self, s_after='s', c_after='c', user_table=""):
         if user_table == self.user_table:
             return {s_after: (self.attr, Aggregator.IDENTITY), c_after: ("1", Aggregator.IDENTITY)}
@@ -121,8 +123,7 @@ class AvgSemiRing(SemiRing):
     def col_sum(self, s='s', c='c', s_after='s', c_after='c'):
         return {s_after: (s, Aggregator.SUM), c_after: (c, Aggregator.SUM)}
 
-    def compute_col_operations(self, user_tables=[], s='s', c='c', s_after='s', c_after='c'):
-
+    def sum_over_product(self, user_tables=[], s='s', c='c', s_after='s', c_after='c'):
         annotated_count = {}
         for i, user_table in enumerate(user_tables):
             annotated_count[f'"{user_table}"'] = f'"{c}"'
@@ -134,7 +135,15 @@ class AvgSemiRing(SemiRing):
 
         return {s_after: (sum_join_calculation, Aggregator.DISTRIBUTED_SUM_PROD), 
                 c_after: (annotated_count, Aggregator.SUM_PROD)}
-
+    
+    def sum_col(self, user_table):
+        return self.sum_over_product([user_table])
+    
+    # we assume that divisor.s is 0
+    def division(self, dividend, divisor, s='s', c='c', s_after='s', c_after='c'):
+        return {s_after: ([f'"{dividend}"."{s}"', f'"{divisor}"."{c}"'], Aggregator.DIV),
+                c_after: ([f'"{dividend}"."{c}"', f'"{divisor}"."{c}"'], Aggregator.DIV)}
+    
     def get_value(self):
         return self.r_pair
     
@@ -145,6 +154,7 @@ class AvgSemiRing(SemiRing):
         return f'AVG({self.user_table}.{self.attr})'
 
 # check if expression has all identity aggregator
+# this is for optimization: if all identity aggregator, we don't need to materialize the result
 def all_identity(expression):
     for key in expression:
         _, agg = expression[key]

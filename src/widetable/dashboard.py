@@ -18,7 +18,37 @@ class DashBoardCJT(CJT):
         super().prepare_message(from_table, to_table, m_type)
         m_type = self.scope.change_message(from_table, to_table, m_type, self)
         return m_type
-
+    
+    def lift_post_process(self, relation):
+        from_table = self.scope.normalize(self.get_user_table(relation))
+        if from_table is None:
+            return
+        
+        join_keys = self.get_join_keys(relation, from_table)[0]
+        sum_weight = self.semi_ring.sum_col(relation)
+        # copy the join keys
+        for attr in join_keys:
+            sum_weight[attr] = (attr, Aggregator.IDENTITY)
+        
+        weight = self.exe.execute_spja_query(sum_weight,
+                                             [relation],
+                                             group_by=join_keys,
+                                             mode=2)
+        
+        normalized_weight = self.semi_ring.division(relation, weight)
+        
+        # copy the remaining attributes as they are (no aggregation)
+        for attr in self.get_useful_attributes(relation):
+            normalized_weight[attr] = (f'{relation}.{attr}', Aggregator.IDENTITY)
+            
+        join_conds = [f"{weight}.{key} IS NOT DISTINCT FROM {relation}.{key}" for key in join_keys]
+        new_relation = self.exe.execute_spja_query(normalized_weight,
+                                                    [relation, weight],
+                                                    select_conds=join_conds,
+                                                    mode=1)
+        if relation != new_relation:
+            self.replace(relation, new_relation)
+        
 class DashBoard(JoinGraph):
     def __init__(self,
                  join_graph: JoinGraph):
@@ -51,7 +81,6 @@ class DashBoard(JoinGraph):
         
         if not lazy:
             cjt.lift_all()
-            cjt.calibration()
         
         if semi_ring.get_user_table() not in self.measurement:
             self.measurement[semi_ring.get_user_table()] = [semi_ring]
@@ -64,11 +93,34 @@ class DashBoard(JoinGraph):
         self.register_semiring(measurement, lazy, scope, replace)
         return measurement
     
+    # for non-ambiguous attribute, add its relation
+    # for ambiguous attribute without error, raise error
+    def parse_attributes(self, attributes):
+        results = []
+        for attr in attributes:
+            result = attr.split(".",1)
+            if len(result) == 1:
+                relations = self.get_relation_from_attribute(result[0])
+                if len(relations) == 0:
+                    raise Exception('attribute {attr} not found in any relation')
+                if len(relations) > 1:
+                    raise Exception('attribute {attr} is ambiguous. please prepend relation')
+                results.append((relations[0], attr))
+            else:
+                results.append((result[0], result[1]))
+    
     # TODO: current group-by is only on the root table
-    def absorption(self, measurement, group_by=[], order_by = [], mode=4):
+    def absorption(self, measurement, group_by=[], order_by = [], mode=4, user_table=None):
+#         parsed_group_by = self.parse_attributes(group_by)
+        
         sem_ring_str = measurement.__str__()
         cjt = self.cjts[sem_ring_str]
-        user_table = measurement.user_table
+        
+        if user_table is None:
+            user_table = measurement.user_table   
+            
+        cjt.upward_message_passing(cjt.get_relation_from_user_table(user_table))
+        # for performance, absorption should be over relation with group-by
         return cjt.absorption(user_table=user_table, group_by=group_by, order_by=order_by, mode=mode)
     
     def highlightRelation(self, measurement, relation):
