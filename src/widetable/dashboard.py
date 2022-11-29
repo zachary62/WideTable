@@ -140,14 +140,17 @@ class DashBoard(JoinGraph):
     nodes: [
         { 
             id: relation,
-            dimensions: [dim1, dim2],
+            attributes: [dim1, dim2],
             join_keys: [
                 {
                     key: col1
                     multiplicity: many/one
                 },
             ],
-            measurements: [ AVG, SUM, COUNT]
+            measurements: [ {
+             metric: AVG/SUM/COUNT,
+             scope: FULL/SINGLE
+            ]
         }
     ]
     

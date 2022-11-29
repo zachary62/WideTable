@@ -21,7 +21,7 @@
 <svg id="session{{session_id}}" width="800" height="800"></svg><br>
 <div id="session{{session_id}}schema"></div>
 
-<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="http://d3js.org/d3.v5.min.js" charset="utf-8"></script>
 <script>
     function getMaxComputedTextLength(trueTypeOf) {
         let max = 0
@@ -56,7 +56,6 @@
     }
 
 
-    console.log("in require");
     console.log(d3.version)
     console.log(d3)
     var svg = d3.select("#session{{session_id}}"),
@@ -298,11 +297,15 @@
         // remove highlighting for all attributes of each relation node
         svg.select("#nodes").selectAll('g').selectAll('g').selectAll('text').style('fill', '#000')
 
+        //remove highlighting for table names of each relation node
+        svg.select("#nodes").selectAll('g').selectAll('rect').style('fill', '#bbb')
 
         schemaarea.selectAll("div")
             .style("color", null)
-        // console.log(trueTypeOf(d))
+
         if (trueTypeOf(d) === 'string') {
+            // handle attribute check here
+            // this.parentNode.__data__;
             //do nothing
         } else if("id" in d){
             // highligt rect
@@ -319,7 +322,7 @@
 
             svg.select("#node_container_" + d.source.id).selectAll('g').selectAll('text').filter(function(cur_d) {
                 return d.left_keys.includes(cur_d);
-            }).style("fill", "#009efd")
+            }).style("fill", "#009efd").style('stroke-width', '2px')
             svg.select("#node_container_" + d.target.id).selectAll('g').selectAll('text').filter(function(cur_d) {
                 return d.right_keys.includes(cur_d);
             }).style("fill", "#009efd")
