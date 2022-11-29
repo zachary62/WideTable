@@ -284,9 +284,11 @@
         d.fx = d.x;
         d.fy = d.y;
 
+        // TODO: move all to style from attr
         // unhighligt all
         svg.selectAll("rect")
-            .style("stroke-width", null)
+            .attr("stroke-width", '1px')
+            .attr('stroke', '#D3D3D3')
 
         svg.selectAll("line")
             .style("stroke-width", '5px')
@@ -296,7 +298,7 @@
             .style("color", null)
 
         // remove highlighting for all attributes of each relation node
-        svg.select("#nodes").selectAll('g').selectAll('g').selectAll('text').style('fill', '#000')
+        svg.select("#nodes").selectAll('g').selectAll('g').selectAll('text').attr('fill', '#000')
 
 
         schemaarea.selectAll("div")
@@ -307,7 +309,7 @@
         } else if("id" in d){
             // highligt rect
             svg.selectAll("rect").filter(function(cur_d) {return cur_d.id == d.id;})
-                .style("stroke-width", "3px")
+                .attr("stroke-width", "3px")
             // highligt text
             schemaarea.select("#" + d.id)
                 .style("color","#009efd")
@@ -315,14 +317,22 @@
         else{
             // highligt line
             svg.selectAll("line").filter(function(cur_d) {return cur_d.source == d.source && cur_d.target == d.target;})
-                .style("stroke", "#000000")
+                .style("stroke", "black")
+
+
+            //highlighting the relations attached to this edge
+            svg.select('#node_container_' +d.source.id).selectAll('rect').attr('stroke', 'black')
+             svg.select('#node_container_' +d.target.id).selectAll('rect').attr('stroke', 'black')
+
 
             svg.select("#node_container_" + d.source.id).selectAll('g').selectAll('text').filter(function(cur_d) {
                 return d.left_keys.includes(cur_d);
-            }).style("fill", "#009efd")
+            }).attr("fill", "#009efd")
             svg.select("#node_container_" + d.target.id).selectAll('g').selectAll('text').filter(function(cur_d) {
                 return d.right_keys.includes(cur_d);
-            }).style("fill", "#009efd")
+            }).attr("fill", "#009efd")
+
+
 
             schemaarea.select("#" + d.source.id).selectAll("span")
                 .filter(function(cur_d) {return d.left_keys.includes(cur_d);})
