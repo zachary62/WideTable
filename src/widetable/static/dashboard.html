@@ -418,19 +418,21 @@
                         rels.forEach(function (item) {
                             let color = 'black';
                             if (item.should_highlight === 'True') {
-                                if (item.color !== 'None') color = item.color
+                                if (item.color !== 'None') {
+                                    color = item.color
+                                }
                                 svg.select('#node_container_' + item.name).selectAll('rect').attr('stroke', color)
                             }
                         });
                         edges.forEach(function (item) {
                             let color = 'black';
                             if (item.should_highlight === 'True') {
-                                if (item.color !== 'None') color = item.color
+                                if (item.color !== 'None') {
+                                    color = item.color
+                                }
                                 svg.selectAll("line")
-                                    .filter(function (cur_d) {
-                                        return cur_d.source.id === item.left_rel && cur_d.target.id === item.right_rel;
-                                    })
-                                    .style("stroke", color)
+                                    .filter(function (cur_d) { return cur_d.source.id === item.left_rel && cur_d.target.id === item.right_rel;
+                                    }).style("stroke", color)
                             }
                         });
 
