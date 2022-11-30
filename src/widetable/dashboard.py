@@ -200,11 +200,11 @@ class DashBoard(JoinGraph):
                         'relations': [{
                             'name': rel,
                             'should_highlight': str(scope.highlightRelation(rel)[0]),
-                            'color': scope.highlightRelation(rel)[1]
+                            'color': str(scope.highlightRelation(rel)[1])
                         } for rel in cjt.get_relations()],
                         'edges': [{'left_rel': edge[0], 'right_rel': edge[1],
                                    'should_highlight': str(scope.highlightEdge(edge[0], edge[1])[0]),
-                                   'color': scope.highlightEdge(edge[0], edge[1])[1]} for edge in scope.edges]
+                                   'color': str(scope.highlightEdge(edge[0], edge[1])[1])} for edge in scope.edges]
 
                     }
                     measurements[measurement['name']] = measurement
