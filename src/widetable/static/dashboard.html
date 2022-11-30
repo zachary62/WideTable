@@ -190,7 +190,7 @@
 
     function getDefaultAttributeColor(d) {
         let measurement_names = this.parentNode.__data__.measurements.flatMap(e => e.name)
-        console.log(this.parentNode.__data__.measurements)
+        console.log("printing names")
         console.log(measurement_names)
         if (this.parentNode.__data__.join_keys.includes(d)) {
             return defaultJoinKeyColor
