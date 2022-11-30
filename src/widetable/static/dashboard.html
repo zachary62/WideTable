@@ -190,8 +190,8 @@
 
     function getDefaultAttributeColor(d) {
         let measurement_names = this.parentNode.__data__.measurements.flatMap(e => e.name)
-        console.log("printing names")
-        console.log(measurement_names)
+        // console.log("printing names")
+        // console.log(measurement_names)
         if (this.parentNode.__data__.join_keys.includes(d)) {
             return defaultJoinKeyColor
         } else if (measurement_names.includes(d)) {
@@ -289,19 +289,7 @@
 
     }
 
-    function dragstarted(d, i) {
-        console.log(d)
-        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-        //moving parent node also, if this is a row text element
-        if (trueTypeOf(d) === 'string') {
-            this.parentNode.__data__.fx = d.x;
-            this.parentNode.__data__.fy = d.y;
-        }
-        d.fx = d.x;
-        d.fy = d.y;
-
-        // TODO: move all to style from attr
-        // unhighligt all
+    function resetHighlightingToDefault() {
         svg.selectAll("rect")
             .attr("stroke-width", '1px')
             .attr('stroke', '#D3D3D3')
@@ -319,10 +307,28 @@
 
         schemaarea.selectAll("div")
             .style("color", null)
-        // console.log(trueTypeOf(d))
+    }
+
+    function dragstarted(d, i) {
+        console.log(d)
+        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        //moving parent node also, if this is a row text element
+        if (trueTypeOf(d) === 'string') {
+            this.parentNode.__data__.fx = d.x;
+            this.parentNode.__data__.fy = d.y;
+        }
+        d.fx = d.x;
+        d.fy = d.y;
+
+        // TODO: move all to style from attr
+        // unhighligt all
+        resetHighlightingToDefault();
+
         if (trueTypeOf(d) === 'string') {
             // if attr is measurement, go through all relations and edges and check if we should highlight them
             //TODO:
+            // let measurement_names = this.parentNode.__data__.measurements.flatMap(e => e.name)
+            console.log(this.parentNode.__data__)
         } else if("id" in d){
             // highligt rect
             svg.selectAll("rect").filter(function(cur_d) {return cur_d.id == d.id;})

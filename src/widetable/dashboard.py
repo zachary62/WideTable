@@ -198,8 +198,7 @@ class DashBoard(JoinGraph):
                         # getting all the relations from the edges
                         # TODO: do we even need to get highlighting info here?
                         'relations': list({{'name': rel, 'should_highlight': scope.highlightRelation(rel)[0],
-                                            'color': scope.highlightRelation(rel)[1]} for relation_pairs in scope.edges
-                                           for rel in relation_pairs}),
+                                            'color': scope.highlightRelation(rel)[1]} for rel in cjt.get_relations()}),
                         'edges': [{'left_rel': edge[0], 'right_rel': edge[1], 'should_highlight': scope.highlightEdge(edge[0], edge[1])[0],
                                    'color': scope.highlightEdge(edge[0], edge[1])[1]} for edge in scope.edges]
 
@@ -220,8 +219,8 @@ class DashBoard(JoinGraph):
                 if (relation_right, relation_left) in seen:
                     continue
                 keys = self.joins[relation_left][relation_right]['keys']
-                left_mul = self.get_multiplicity(relation_left, relation_right,simple=True)
-                right_mul = self.get_multiplicity(relation_right, relation_left,simple=True)
+                left_mul = self.get_multiplicity(relation_left, relation_right, simple=True)
+                right_mul = self.get_multiplicity(relation_right, relation_left, simple=True)
                 links.append({"source": relation_left, "target": relation_right,
                               "left_keys": keys[0], "right_keys": keys[1],
                               "multiplicity": [left_mul, right_mul]})
