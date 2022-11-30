@@ -186,7 +186,7 @@ class DashBoard(JoinGraph):
             dimensions = set(self.get_relation_attributes(relation))
             join_keys = set(self.get_join_keys(relation))
             attributes = set(self.get_useful_attributes(relation))
-            measurements = set()
+            measurements = dict()
             if relation in self.measurement:
                 for semi_ring in self.measurement[relation]:
                     semi_ring_str = semi_ring.__str__()
@@ -204,11 +204,11 @@ class DashBoard(JoinGraph):
                                    'color': scope.highlightEdge(edge[0], edge[1])[1]} for edge in scope.edges]
 
                     }
-                    measurements.add(measurement)
+                    measurements[measurement['name']] = measurement
 
             measurement_names = [measurement['name'] for measurement in measurements]
             nodes.append({"id": relation,
-                          "measurements": list(measurements),
+                          "measurements": list(measurements.values()),
                           "attributes": measurement_names + list(attributes),
                           "join_keys": list(join_keys),
                           })
