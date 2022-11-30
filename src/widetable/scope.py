@@ -23,11 +23,13 @@ class Scope(ABC):
         return None
     
 class FullJoin(Scope):
-    pass
-    
+    def __init__(self):
+        self.edges = set()
+
 class SingleRelation(Scope):
     def __init__(self, relation):
         self.relation = relation
+        self.edges = set()
         
     def change_message(self, from_table, to_table, m_type, joingraph):
         return Message.IDENTITY
