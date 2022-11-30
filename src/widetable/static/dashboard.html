@@ -314,17 +314,17 @@
             });
         sourceLinkTexts
             .attr('x', function (d) {
-                return d.source.x + (d.target.x - d.source.x) / 3
+                return d.source.x + 2* (d.target.x - d.source.x) / 5
             })
             .attr('y', function (d) {
-                return d.source.y + (d.target.y - d.source.y) / 3
+                return d.source.y + 2* (d.target.y - d.source.y) / 5
             });
         destLinkTexts
             .attr('x', function (d) {
-                return d.source.x + 2 * (d.target.x - d.source.x) / 3
+                return d.source.x + 3 * (d.target.x - d.source.x) / 5
             })
             .attr('y', function (d) {
-                return d.source.y + 2 * (d.target.y - d.source.y) / 3
+                return d.source.y + 3 * (d.target.y - d.source.y) / 5
             });
 
         node
