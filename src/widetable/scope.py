@@ -23,8 +23,7 @@ class Scope(ABC):
         return None
     
 class FullJoin(Scope):
-    def __init__(self, relation):
-        self.relation = relation
+    def __init__(self):
         self.edges = set()
 
 class SingleRelation(Scope):
