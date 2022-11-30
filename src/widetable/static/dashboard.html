@@ -70,6 +70,8 @@
     "links": {{links}}
     }
 
+    const defaultMeasurementColor = '#8cfb14';
+    const defaultJoinKeyColor = '#ef8058';
     // console.log(graph.nodes)
 
     var trueTypeOf = (obj) => Object.prototype.toString.call(obj).slice(8, -1).toLowerCase()
@@ -176,6 +178,17 @@
             .on("drag", dragged)
             .on("end", dragended));
 
+    function getAttributeClassName(d) {
+        let measurement_names = this.parentNode.__data__.measurements.flatMap(e => e.name)
+        console.log(measurement_names)
+        if (this.parentNode.__data__.join_keys.includes(d)) {
+            return "join_keys"
+        } else if (measurement_names.includes(d)) {
+            return "measurements"
+        }
+        return "attribute";
+    }
+
     var attrRects = dataEnter.append('g')
         // .append('rect')
         .selectAll('rect')
@@ -189,18 +202,15 @@
         })
         .attr('id', function(d,i) {return "attr_" + d;})
         .attr('class', function(d,i) {
-            if (this.parentNode.__data__.join_keys.includes(d)) {
-                return "join_keys"
-            }
-            return "attribute";
+            return getAttributeClassName.call(this, d);
         })
         .attr('width', 60)
         .attr('height', 30)
         .attr('fill', function(d) {
             if (this.parentNode.__data__.join_keys.includes(d)) {
-                return '#ef8058'
+                return defaultJoinKeyColor
             } else if (this.parentNode.__data__.measurements.includes(d)) {
-                return '#8cfb14'
+                return defaultMeasurementColor
             }
             return '#fff'
         })
@@ -305,7 +315,8 @@
             .style("color", null)
         // console.log(trueTypeOf(d))
         if (trueTypeOf(d) === 'string') {
-            //do nothing
+            // if attr is measurement, go through all relations and edges and check if we should highlight them
+            //TODO:
         } else if("id" in d){
             // highligt rect
             svg.selectAll("rect").filter(function(cur_d) {return cur_d.id == d.id;})
