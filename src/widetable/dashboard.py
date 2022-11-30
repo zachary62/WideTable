@@ -206,7 +206,7 @@ class DashBoard(JoinGraph):
                     }
                     measurements[measurement['name']] = measurement
 
-            measurement_names = [measurement['name'] for measurement in measurements]
+            measurement_names = list(measurements.keys())
             nodes.append({"id": relation,
                           "measurements": list(measurements.values()),
                           "attributes": measurement_names + list(attributes),
