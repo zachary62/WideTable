@@ -26,7 +26,7 @@
     function getMaxComputedTextLength(trueTypeOf) {
         let max = 0
         for (let i = 0; i < this.parentNode.childNodes.length; i++) {
-            if (trueTypeOf(this.parentNode.childNodes[i]) === 'svggelement' ) {
+            if (trueTypeOf(this.parentNode.childNodes[i]) === 'svggelement') {
                 max = getMaxTextLength(this.parentNode.childNodes[i], trueTypeOf, max);
             } else if (trueTypeOf(this.parentNode.childNodes[i]) === 'svgtextelement'
                 && this.parentNode.childNodes[i].getComputedTextLength() > max) {
@@ -66,8 +66,18 @@
     var schemaarea = d3.select("#session{{session_id}}schema")
 
     graph = {
-        "nodes": {{nodes}},
-    "links": {{links}}
+        "nodes": {
+    {
+        nodes
+    }
+    },
+    "links"
+    :
+    {
+        {
+            links
+        }
+    }
     }
 
     const defaultMeasurementColor = '#8cfb14';
@@ -77,7 +87,9 @@
     var trueTypeOf = (obj) => Object.prototype.toString.call(obj).slice(8, -1).toLowerCase()
 
     var simulation = d3.forceSimulation()
-        .force("link", d3.forceLink().id(function(d) { return d.id; }))
+        .force("link", d3.forceLink().id(function (d) {
+            return d.id;
+        }))
         .force("charge", d3.forceManyBody().strength(-180))
         .force("center", d3.forceCenter(width / 2, height / 2));
 
@@ -88,33 +100,46 @@
         .data(graph.links)
         .enter()
         .append("g")
-        .attr('id', function(d) {return 'link_container_' + d.source + '-' + d.target});
+        .attr('id', function (d) {
+            return 'link_container_' + d.source + '-' + d.target
+        });
 
     var link = linkContainers
         .append("line")
-        .attr('id', function(d) { return d.source + "-" + d.target;})
+        .attr('id', function (d) {
+            return d.source + "-" + d.target;
+        })
         .attr('stroke-width', '5px')
         .attr('stroke', '#D3D3D3')
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
-            .on("end", dragended));;
+            .on("end", dragended));
+    ;
 
     var sourceLinkTexts = linkContainers
         .append('text')
         .attr("fill", "Black")
-        .attr('x',function(d) {return d.source.x;})
-        .attr('y',function(d) {return d.source.y;})
-        .text(function(d,i) {
+        .attr('x', function (d) {
+            return d.source.x;
+        })
+        .attr('y', function (d) {
+            return d.source.y;
+        })
+        .text(function (d, i) {
             // console.log(d)
             return d.multiplicity[0] + '';
         })
     var destLinkTexts = linkContainers
         .append('text')
         .attr("fill", "Black")
-        .attr('x',function(d) {return d.target.x;})
-        .attr('y',function(d) {return d.target.y;})
-        .text(function(d,i) {
+        .attr('x', function (d) {
+            return d.target.x;
+        })
+        .attr('y', function (d) {
+            return d.target.y;
+        })
+        .text(function (d, i) {
             console.log(d)
             return d.multiplicity[1];
         })
@@ -129,7 +154,9 @@
         .enter()
         .append("g")
         // .join('g')
-        .attr('id', function(d) {return 'node_container_' + d.id})
+        .attr('id', function (d) {
+            return 'node_container_' + d.id
+        })
     ;
 
     var schema = schemaarea
@@ -137,26 +164,37 @@
         .data(graph.nodes)
         .enter()
         .append("div")
-        .attr('id', function(d) { return d.id;})
-
+        .attr('id', function (d) {
+            return d.id;
+        })
 
 
     schema.append("text")
         .style("font-weight", "bold")
-        .text(function(d) { return d.id + ": ";})
+        .text(function (d) {
+            return d.id + ": ";
+        })
 
 
     schema.selectAll("span")
-        .data(function(d) { return d.attributes;})
+        .data(function (d) {
+            return d.attributes;
+        })
         .enter()
         .append("span")
-        .attr('id', function(d) { return d.id;})
-        .text(function(d) { return d + ", ";})
+        .attr('id', function (d) {
+            return d.id;
+        })
+        .text(function (d) {
+            return d + ", ";
+        })
 
     var node = dataEnter.append("rect")
         .attr('x', 10)
         .attr('y', 120)
-        .attr('id', function(d) { return d.id;})
+        .attr('id', function (d) {
+            return d.id;
+        })
         .attr('width', 60)
         .attr('height', 30)
         // .attr('class', 'table_names')
@@ -172,7 +210,9 @@
         .attr('y', 120)
         .attr("dy", "1em")
         .attr('fill', 'white')
-        .text(function(d) { return d.id; })
+        .text(function (d) {
+            return d.id;
+        })
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
@@ -203,21 +243,25 @@
     var attrRects = dataEnter.append('g')
         // .append('rect')
         .selectAll('rect')
-        .data( function(d) {return d.attributes})
+        .data(function (d) {
+            return d.attributes
+        })
         .enter()
         .append('rect')
         .attr('x', 10)
         .attr('y', 120)
-        .attr('dy', function(d,i) {
-            return 3*i + 'em'
+        .attr('dy', function (d, i) {
+            return 3 * i + 'em'
         })
-        .attr('id', function(d,i) {return "attr_" + d;})
-        .attr('class', function(d,i) {
+        .attr('id', function (d, i) {
+            return "attr_" + d;
+        })
+        .attr('class', function (d, i) {
             return getAttributeClassName.call(this, d);
         })
         .attr('width', 60)
         .attr('height', 30)
-        .attr('fill', function(d) {
+        .attr('fill', function (d) {
             return getDefaultAttributeColor.call(this, d);
         })
         .attr('stroke', '#bbb')
@@ -228,25 +272,29 @@
 
     var attrTexts = dataEnter.select('g')
         .selectAll('text')
-        .data(function(d) {return d.attributes})
+        .data(function (d) {
+            return d.attributes
+        })
         .enter()
         .append('text')
         .attr('class', 'attr_texts')
         .attr('x', 10)
         .attr('y', 120)
-        .attr('dy', function(d,i) {
-            return (i + 1)*15;
+        .attr('dy', function (d, i) {
+            return (i + 1) * 15;
         })
-        .text(function(d) { return d; })
+        .text(function (d) {
+            return d;
+        })
         .call(d3.drag()
             .on("start", dragstarted)
             .on("drag", dragged)
             .on("end", dragended));
 
-    node.attr("width",function (d) {
+    node.attr("width", function (d) {
         return getMaxComputedTextLength.call(this, trueTypeOf);
     });
-    attrRects.attr("width",function (d) {
+    attrRects.attr("width", function (d) {
         return getMaxComputedFromParents.call(this, trueTypeOf);
     });
 
@@ -257,35 +305,68 @@
     simulation.force("link")
         .links(graph.links)
         .distance(150);
+
     // .distance(function(d) {return d.value;});
 
     function ticked() {
         link
-            .attr("x1", function(d) { return Math.max(0,Math.min(width, d.source.x)); })
-            .attr("y1", function(d) { return Math.max(0,Math.min(height, d.source.y)); })
-            .attr("x2", function(d) { return Math.max(0,Math.min(width, d.target.x)); })
-            .attr("y2", function(d) { return Math.max(0,Math.min(height, d.target.y)); });
+            .attr("x1", function (d) {
+                return Math.max(0, Math.min(width, d.source.x));
+            })
+            .attr("y1", function (d) {
+                return Math.max(0, Math.min(height, d.source.y));
+            })
+            .attr("x2", function (d) {
+                return Math.max(0, Math.min(width, d.target.x));
+            })
+            .attr("y2", function (d) {
+                return Math.max(0, Math.min(height, d.target.y));
+            });
         sourceLinkTexts
-            .attr('x',function(d) {return d.source.x + (d.target.x - d.source.x)/3})
-            .attr('y',function(d) {return d.source.y + (d.target.y - d.source.y)/3});
+            .attr('x', function (d) {
+                return d.source.x + (d.target.x - d.source.x) / 3
+            })
+            .attr('y', function (d) {
+                return d.source.y + (d.target.y - d.source.y) / 3
+            });
         destLinkTexts
-            .attr('x',function(d) {return d.source.x + 2*(d.target.x - d.source.x)/3})
-            .attr('y',function(d) {return d.source.y + 2*(d.target.y - d.source.y)/3});
+            .attr('x', function (d) {
+                return d.source.x + 2 * (d.target.x - d.source.x) / 3
+            })
+            .attr('y', function (d) {
+                return d.source.y + 2 * (d.target.y - d.source.y) / 3
+            });
 
         node
-            .attr("x", function(d) {return Math.max(0,Math.min(width, d.x)) - this.getBBox().width/2; })
-            .attr("y", function(d) { return Math.max(0,Math.min(height, d.y)) - this.getBBox().height/2; });
+            .attr("x", function (d) {
+                return Math.max(0, Math.min(width, d.x)) - this.getBBox().width / 2;
+            })
+            .attr("y", function (d) {
+                return Math.max(0, Math.min(height, d.y)) - this.getBBox().height / 2;
+            });
         nodeText
-            .attr("x", function(d) { return Math.max(0,Math.min(width, d.x)) - this.getBBox().width/2; })
-            .attr("y", function(d) { return Math.max(0,Math.min(height, d.y)) - this.getBBox().height/2; });
+            .attr("x", function (d) {
+                return Math.max(0, Math.min(width, d.x)) - this.getBBox().width / 2;
+            })
+            .attr("y", function (d) {
+                return Math.max(0, Math.min(height, d.y)) - this.getBBox().height / 2;
+            });
 
         attrRects
-            .attr("x", function(d,i) {return Math.max(0,Math.min(width, this.parentNode.__data__.x)) - this.getBBox().width/2; })
-            .attr("y", function(d,i) {return Math.max(0,Math.min(height, this.parentNode.__data__.y + 30*i)) - this.getBBox().height/2 + 30; });
+            .attr("x", function (d, i) {
+                return Math.max(0, Math.min(width, this.parentNode.__data__.x)) - this.getBBox().width / 2;
+            })
+            .attr("y", function (d, i) {
+                return Math.max(0, Math.min(height, this.parentNode.__data__.y + 30 * i)) - this.getBBox().height / 2 + 30;
+            });
 
         attrTexts
-            .attr("x", function(d,i) {return Math.max(0,Math.min(width, this.parentNode.__data__.x)) - this.getBBox().width/2; })
-            .attr("y", function(d,i) {return Math.max(0,Math.min(height, this.parentNode.__data__.y + 15*i)) - this.getBBox().height/2 + 30; });
+            .attr("x", function (d, i) {
+                return Math.max(0, Math.min(width, this.parentNode.__data__.x)) - this.getBBox().width / 2;
+            })
+            .attr("y", function (d, i) {
+                return Math.max(0, Math.min(height, this.parentNode.__data__.y + 15 * i)) - this.getBBox().height / 2 + 30;
+            });
 
     }
 
@@ -326,53 +407,86 @@
 
         if (trueTypeOf(d) === 'string') {
             // if attr is measurement, go through all relations and edges and check if we should highlight them
-            //TODO:
-            // let measurement_names = this.parentNode.__data__.measurements.flatMap(e => e.name)
             console.log(this.parentNode.__data__)
-        } else if("id" in d){
+            let measures = this.parentNode.__data__.measurements;
+            let measurement_names = measures.flatMap(e => e.name);
+            if (measurement_names.includes(d)) {
+                for (let i = 0; i < measures.length; i++) {
+                    if (measures[i].name === d) {
+                        let rels = measures[i].relations;
+                        let edges = measures[i].edges;
+                        rels.forEach(function (item) {
+                            let color = 'black';
+                            if (item.should_highlight === 'True') {
+                                if (item.color !== 'None') color = item.color
+                                svg.select('#node_container_' + item.name).selectAll('rect').attr('stroke', color)
+                            }
+                        });
+                        edges.forEach(function (item) {
+                            let color = 'black';
+                            if (item.should_highlight === 'True') {
+                                if (item.color !== 'None') color = item.color
+                                svg.selectAll("line")
+                                    .filter(function (cur_d) {
+                                        return cur_d.source.id === item.left_rel && cur_d.target.id === item.right_rel;
+                                    })
+                                    .style("stroke", color)
+                            }
+                        });
+
+                    }
+                }
+            }
+        } else if ("id" in d) {
             // highligt rect
-            svg.selectAll("rect").filter(function(cur_d) {return cur_d.id == d.id;})
+            svg.selectAll("rect").filter(function (cur_d) {
+                return cur_d.id == d.id;
+            })
                 .attr("stroke-width", "3px")
             // highligt text
             schemaarea.select("#" + d.id)
-                .style("color","#009efd")
-        }
-        else{
+                .style("color", "#009efd")
+        } else {
             // highligt line
-            svg.selectAll("line").filter(function(cur_d) {return cur_d.source == d.source && cur_d.target == d.target;})
+            svg.selectAll("line").filter(function (cur_d) {
+                return cur_d.source == d.source && cur_d.target == d.target;
+            })
                 .style("stroke", "black")
 
 
             //highlighting the relations attached to this edge
-            svg.select('#node_container_' +d.source.id).selectAll('rect').attr('stroke', 'black')
-             svg.select('#node_container_' +d.target.id).selectAll('rect').attr('stroke', 'black')
+            svg.select('#node_container_' + d.source.id).selectAll('rect').attr('stroke', 'black')
+            svg.select('#node_container_' + d.target.id).selectAll('rect').attr('stroke', 'black')
 
 
-            svg.select("#node_container_" + d.source.id).selectAll('g').selectAll('text').filter(function(cur_d) {
+            svg.select("#node_container_" + d.source.id).selectAll('g').selectAll('text').filter(function (cur_d) {
                 return d.left_keys.includes(cur_d);
             }).attr("fill", "#009efd")
-            svg.select("#node_container_" + d.target.id).selectAll('g').selectAll('text').filter(function(cur_d) {
+            svg.select("#node_container_" + d.target.id).selectAll('g').selectAll('text').filter(function (cur_d) {
                 return d.right_keys.includes(cur_d);
             }).attr("fill", "#009efd")
 
 
-
             schemaarea.select("#" + d.source.id).selectAll("span")
-                .filter(function(cur_d) {return d.left_keys.includes(cur_d);})
-                .style("color","#009efd")
+                .filter(function (cur_d) {
+                    return d.left_keys.includes(cur_d);
+                })
+                .style("color", "#009efd")
 
             schemaarea.select("#" + d.target.id).selectAll("span")
-                .filter(function(cur_d) {return d.right_keys.includes(cur_d);})
-                .style("color","#009efd")
+                .filter(function (cur_d) {
+                    return d.right_keys.includes(cur_d);
+                })
+                .style("color", "#009efd")
         }
 
     }
 
-    function dragged(d,i) {
+    function dragged(d, i) {
         //moving parent node also, if this is a row text element
         if (trueTypeOf(d) === 'string') {
             this.parentNode.__data__.fx = d3.event.x
-            this.parentNode.__data__.fy = d3.event.y - (i+1)*30;
+            this.parentNode.__data__.fy = d3.event.y - (i + 1) * 30;
         }
         d.fx = d3.event.x;
         d.fy = d3.event.y;
