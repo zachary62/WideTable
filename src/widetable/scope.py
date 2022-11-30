@@ -28,6 +28,7 @@ class FullJoin(Scope):
 class SingleRelation(Scope):
     def __init__(self, relation):
         self.relation = relation
+        self.edges = set()
         
     def change_message(self, from_table, to_table, m_type, joingraph):
         return Message.IDENTITY
