@@ -189,6 +189,16 @@
         return "attribute";
     }
 
+    function getDefaultAttributeColor(d) {
+        let measurement_names = this.parentNode.__data__.measurements.flatMap(e => e.name)
+        if (this.parentNode.__data__.join_keys.includes(d)) {
+            return defaultJoinKeyColor
+        } else if (measurement_names.includes(d)) {
+            return defaultMeasurementColor
+        }
+        return '#fff'
+    }
+
     var attrRects = dataEnter.append('g')
         // .append('rect')
         .selectAll('rect')
@@ -207,12 +217,7 @@
         .attr('width', 60)
         .attr('height', 30)
         .attr('fill', function(d) {
-            if (this.parentNode.__data__.join_keys.includes(d)) {
-                return defaultJoinKeyColor
-            } else if (this.parentNode.__data__.measurements.includes(d)) {
-                return defaultMeasurementColor
-            }
-            return '#fff'
+            return getDefaultAttributeColor.call(this, d);
         })
         .attr('stroke', '#bbb')
         .call(d3.drag()
