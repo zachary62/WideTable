@@ -11,7 +11,7 @@ class DashBoardCJT(CJT):
                  join_graph: JoinGraph,
                  scope: Scope):
 
-        super().__init__(semi_ring,join_graph)
+        super().__init__(semi_ring, join_graph)
         self.scope = scope
 
     def prepare_message(self, from_table: str, to_table: str, m_type: Message):
@@ -182,6 +182,21 @@ class DashBoard(JoinGraph):
     def _repr_html_(self):
         nodes = []
         links = []
+
+        # avoid edge in opposite direction
+        seen = set()
+        for relation_left in self.joins:
+            for relation_right in self.joins[relation_left]:
+                if (relation_right, relation_left) in seen:
+                    continue
+                keys = self.joins[relation_left][relation_right]['keys']
+                left_mul = self.get_multiplicity(relation_left, relation_right, simple=True)
+                right_mul = self.get_multiplicity(relation_right, relation_left, simple=True)
+                links.append({"source": relation_left, "target": relation_right,
+                              "left_keys": keys[0], "right_keys": keys[1],
+                              "multiplicity": [left_mul, right_mul]})
+                seen.add((relation_left, relation_right))
+
         for relation in self.get_relations():
             dimensions = set(self.get_relation_attributes(relation))
             join_keys = set(self.get_join_keys(relation))
@@ -202,9 +217,9 @@ class DashBoard(JoinGraph):
                             'should_highlight': str(scope.highlightRelation(rel)[0]),
                             'color': str(scope.highlightRelation(rel)[1])
                         } for rel in self.get_relations()],
-                        'edges': [{'left_rel': edge[0], 'right_rel': edge[1],
-                                   'should_highlight': str(scope.highlightEdge(edge[0], edge[1])[0]),
-                                   'color': str(scope.highlightEdge(edge[0], edge[1])[1])} for edge in scope.edges]
+                        'edges': [{'left_rel': edge['source'], 'right_rel': edge['target'],
+                                   'should_highlight': str(scope.highlightEdge(edge['source'], edge['target'])[0]),
+                                   'color': str(scope.highlightEdge(edge['source'], edge['target'])[1])} for edge in links]
 
                     }
                     measurements[measurement['name']] = measurement
@@ -215,20 +230,6 @@ class DashBoard(JoinGraph):
                           "attributes": measurement_names + list(attributes),
                           "join_keys": list(join_keys),
                           })
-
-        # avoid edge in opposite direction
-        seen = set()
-        for relation_left in self.joins:
-            for relation_right in self.joins[relation_left]:
-                if (relation_right, relation_left) in seen:
-                    continue
-                keys = self.joins[relation_left][relation_right]['keys']
-                left_mul = self.get_multiplicity(relation_left, relation_right, simple=True)
-                right_mul = self.get_multiplicity(relation_right, relation_left, simple=True)
-                links.append({"source": relation_left, "target": relation_right,
-                              "left_keys": keys[0], "right_keys": keys[1],
-                              "multiplicity": [left_mul, right_mul]})
-                seen.add((relation_left, relation_right))
 
         self.session_id += 1
 
