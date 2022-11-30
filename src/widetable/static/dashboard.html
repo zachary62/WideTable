@@ -180,7 +180,6 @@
 
     function getAttributeClassName(d) {
         let measurement_names = this.parentNode.__data__.measurements.flatMap(e => e.name)
-        console.log(measurement_names)
         if (this.parentNode.__data__.join_keys.includes(d)) {
             return "join_keys"
         } else if (measurement_names.includes(d)) {
@@ -191,6 +190,8 @@
 
     function getDefaultAttributeColor(d) {
         let measurement_names = this.parentNode.__data__.measurements.flatMap(e => e.name)
+        console.log(this.parentNode.__data__.measurements)
+        console.log(measurement_names)
         if (this.parentNode.__data__.join_keys.includes(d)) {
             return defaultJoinKeyColor
         } else if (measurement_names.includes(d)) {
