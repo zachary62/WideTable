@@ -78,6 +78,7 @@
     const linkDistance = 300
     let buffer = 100
     width = Math.max(800, (attrWidth + linkDistance/2) * graph.nodes.length + buffer)
+    svg.attr('width', width)
 
     function findMaxNumAttributes() {
         let maxNumAttributes = 0
@@ -91,6 +92,7 @@
 
     let maxNumAttributes = findMaxNumAttributes();
     height = Math.max(800, (attrHeight + linkDistance/10)* maxNumAttributes + buffer)
+    svg.attr('height', height)
 
     var schemaarea = d3.select("#session{{session_id}}schema")
 
