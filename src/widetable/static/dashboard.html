@@ -76,15 +76,15 @@
         height = +svg.attr("height");
 
     let buffer = 100
-    width = 60* graph.nodes.length + buffer
+    let w = 60* graph.nodes.length + buffer
     maxNumAttributes =0
     for (let i=0;i<graph.nodes.length;i++) {
         if (graph.nodes[i].attributes.length > maxNumAttributes) {
             maxNumAttributes = graph.nodes[i].attributes.length
         }
     }
-    height = 20* maxNumAttributes + buffer
-    console.log('expected w and h ' + width + ' ' + height)
+    let h = 20* maxNumAttributes + buffer
+    console.log('expected w and h ' + w + ' ' + h)
 
     var schemaarea = d3.select("#session{{session_id}}schema")
 
