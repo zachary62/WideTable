@@ -77,7 +77,7 @@
     var attrHeight = 30
     const linkDistance = 300
     let buffer = 100
-    width = (attrWidth + linkDistance/2) * graph.nodes.length + buffer
+    width = Math.max(800, (attrWidth + linkDistance/2) * graph.nodes.length + buffer)
 
     function findMaxNumAttributes() {
         let maxNumAttributes = 0
@@ -90,7 +90,7 @@
     }
 
     let maxNumAttributes = findMaxNumAttributes();
-    height = (attrHeight + linkDistance/10)* maxNumAttributes + buffer
+    height = Math.max(800, (attrHeight + linkDistance/10)* maxNumAttributes + buffer)
 
     var schemaarea = d3.select("#session{{session_id}}schema")
 
