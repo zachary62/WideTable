@@ -73,11 +73,12 @@
     var svg = d3.select("#session{{session_id}}"), width = +svg.attr("width"),
         height = +svg.attr("height");
 
-    var attrWidth = 60
+    var defaultAttrWidth = 60
     var attrHeight = 30
     const linkDistance = 300
     let buffer = 100
-    width = Math.max(800, (attrWidth + linkDistance/2) * graph.nodes.length + buffer)
+    // TODO: calculate based on maxAttrWidth instead of defaultAttrWidth
+    width = Math.max(800, (defaultAttrWidth + linkDistance/2) * graph.nodes.length + buffer)
     svg.attr('width', width)
 
     function findMaxNumAttributes() {
@@ -210,7 +211,7 @@
         .attr('id', function (d) {
             return d.id;
         })
-        .attr('width', attrWidth)
+        .attr('width', defaultAttrWidth)
         .attr('height', attrHeight)
         // .attr('class', 'table_names')
         // table header color
