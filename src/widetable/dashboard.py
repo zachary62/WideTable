@@ -147,17 +147,15 @@ class DashBoard(JoinGraph):
                     multiplicity: many/one
                 },
             ],
-            -- prev
-            measurements: [ AVG, SUM, COUNT]
-            -- new
             measurements: [ 
             {
                 name: AVG(A,..),
-                scope: FULL/SINGLE -- is this required?
-                relations: [t1,t2,t3],
-                edges: [(t1,t2), (t2,t3)]
-                // also store how to highlight and color
-                
+                relations: [
+                {name: t1, should_highlight: True/False, color: None},
+                {name: t2, should_highlight: True/False, color: None}],
+                edges: [
+                {left_rel: t1, right_rel: t2, should_highlight: True/False, color: None},
+                ]
             }, 
             {..}
             ]
@@ -226,6 +224,7 @@ class DashBoard(JoinGraph):
 
             measurement_names = list(measurements.keys())
             nodes.append({"id": relation,
+                          "name": relation,
                           "measurements": list(measurements.values()),
                           "attributes": measurement_names + list(attributes),
                           "join_keys": list(join_keys),
