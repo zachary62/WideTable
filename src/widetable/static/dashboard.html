@@ -245,8 +245,6 @@
 
     function getDefaultAttributeColor(d) {
         let measurement_names = this.parentNode.__data__.measurements.flatMap(e => e.name)
-        // console.log("printing names")
-        // console.log(measurement_names)
         if (this.parentNode.__data__.join_keys.includes(d)) {
             return defaultJoinKeyColor
         } else if (measurement_names.includes(d)) {
@@ -419,12 +417,12 @@
         d.fy = d.y;
 
         // TODO: move all to style from attr
-        // unhighligt all
+        // highlight all
         resetHighlightingToDefault();
 
         if (trueTypeOf(d) === 'string') {
             // if attr is measurement, go through all relations and edges and check if we should highlight them
-            console.log(this.parentNode.__data__)
+            // console.log(this.parentNode.__data__)
             let measures = this.parentNode.__data__.measurements;
             let measurement_names = measures.flatMap(e => e.name);
             if (measurement_names.includes(d)) {
@@ -457,16 +455,16 @@
                 }
             }
         } else if ("id" in d) {
-            // highligt rect
+            // highlight rect
             svg.selectAll("rect").filter(function (cur_d) {
                 return cur_d.id == d.id;
             })
                 .attr("stroke-width", "3px")
-            // highligt text
+            // highlight text
             schemaarea.select("#" + d.id)
                 .style("color", "#009efd")
         } else {
-            // highligt line
+            // highlight line
             svg.selectAll("line").filter(function (cur_d) {
                 return cur_d.source == d.source && cur_d.target == d.target;
             })
@@ -515,6 +513,7 @@
     function dragended(d) {
         d3.event.sourceEvent.stopPropagation();
         if (!d3.event.active) simulation.alphaTarget(0);
+        // handle drag on attribute text
         if (trueTypeOf(d) === 'string') {
             this.parentNode.__data__.fx = null
             this.parentNode.__data__.fy = null
