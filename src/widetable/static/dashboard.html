@@ -89,7 +89,8 @@
     let maxNumAttributes = findMaxNumAttributes();
     height = Math.max(800, (attrHeight + linkDistance/10)* maxNumAttributes + buffer)
     svg.attr('height', height)
-    svg.on("click", function() {
+    svg.on("mousedown", function() {
+        //reset all highlighting if background is clicked
         resetHighlightingToDefault();
     })
 
@@ -406,7 +407,8 @@
 
     function dragstarted(d, i) {
         console.log(d)
-        d3.event.stopPropagation();
+        //prevent parent svg event from being fired
+        d3.event.sourceEvent.stopPropagation();
         if (!d3.event.active) simulation.alphaTarget(0.3).restart();
         //moving parent node also, if this is a row text element
         if (trueTypeOf(d) === 'string') {
@@ -500,7 +502,7 @@
     }
 
     function dragged(d, i) {
-        d3.event.stopPropagation();
+        d3.event.sourceEvent.stopPropagation();
         //moving parent node also, if this is a row text element
         if (trueTypeOf(d) === 'string') {
             this.parentNode.__data__.fx = d3.event.x
@@ -511,7 +513,7 @@
     }
 
     function dragended(d) {
-        d3.event.stopPropagation();
+        d3.event.sourceEvent.stopPropagation();
         if (!d3.event.active) simulation.alphaTarget(0);
         if (trueTypeOf(d) === 'string') {
             this.parentNode.__data__.fx = null
