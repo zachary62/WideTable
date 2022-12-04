@@ -14,10 +14,10 @@ class Scope(ABC):
     # for visualization, return whether it should be highlighted, and the color
     # if color is None, then use the default color
     def highlightEdge(self, from_table, to_table):
-        return True, None
+        return True, "null", ""
     
     def highlightRelation(self, table):
-        return True, None
+        return True, "null", ""
     
     def normalize(self, relation):
         return None
@@ -25,6 +25,9 @@ class Scope(ABC):
 class FullJoin(Scope):
     def __init__(self):
         self.edges = set()
+    
+    def highlightRelation(self, table):
+        return True, "null", "all"
 
 class SingleRelation(Scope):
     def __init__(self, relation):
@@ -36,12 +39,12 @@ class SingleRelation(Scope):
     
     # for visualization, return whether it should be highlighted, and the color
     def highlightEdge(self, from_table, to_table):
-        return False, None
+        return False, "null", ""
     
     def highlightRelation(self, relation):
         if relation == self.relation:
-            return True, None
-        return False, None
+            return True, "null", "single"
+        return False, "null", ""
     
 class ReplicateFact(Scope):
     def __init__(self, relation, fact):
@@ -96,14 +99,16 @@ class ReplicateFact(Scope):
     # for visualization, return whether it should be highlighted, and the color
     def highlightEdge(self, from_table, to_table):
         if (from_table, to_table) in self.edges or (to_table, from_table) in self.edges:
-            return True, None
-        return False, None
+            return True, "null", ""
+        return False, "null", ""
     
     def highlightRelation(self, relation):
+        if relation == self.fact:
+            return True, "null", "fact"
         for from_table, to_table in self.edges:
             if relation == from_table or relation == to_table:
-                return True, None
-        return False, None
+                return True, "null", "dim"
+        return False, "null", "dim"
     
 class AverageAttribution(Scope):
     def __init__(self, relation):
@@ -132,14 +137,14 @@ class AverageAttribution(Scope):
     # for visualization, return whether it should be highlighted, and the color
     def highlightEdge(self, from_table, to_table):
         if (from_table, to_table) in self.edges or (to_table, from_table) in self.edges:
-            return True, self.highlightcolor
-        return True, None
+            return True, self.highlightcolor, ""
+        return True, "null", ""
     
     def highlightRelation(self, relation):
         for from_table, to_table in self.edges:
             if relation == to_table:
-                return True, self.highlightcolor
-        return True, None
+                return True, self.highlightcolor, ""
+        return True, "null", ""
     
     def normalize(self, relation):
         for from_table, to_table in self.edges:

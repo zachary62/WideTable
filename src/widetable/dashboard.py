@@ -185,48 +185,48 @@ class DashBoard(JoinGraph):
         seen = set()
         for relation_left in self.joins:
             for relation_right in self.joins[relation_left]:
-                if (relation_right, relation_left) in seen:
-                    continue
-                keys = self.joins[relation_left][relation_right]['keys']
-                left_mul = self.get_multiplicity(relation_left, relation_right, simple=True)
-                right_mul = self.get_multiplicity(relation_right, relation_left, simple=True)
-                links.append({"source": relation_left, "target": relation_right,
-                              "left_keys": keys[0], "right_keys": keys[1],
-                              "multiplicity": [left_mul, right_mul]})
+                if (relation_right, relation_left) in seen: continue
+                links.append({"source": relation_left, 
+                              "target": relation_right,
+                              "left_keys": self.get_join_keys(relation_left, relation_right), 
+                              "right_keys": self.get_join_keys(relation_right, relation_left),
+                              "multiplicity": [self.get_multiplicity(relation_left, relation_right, simple=True), 
+                                               self.get_multiplicity(relation_right, relation_left, simple=True)],
+                              "missing":[self.get_missing_keys(relation_left, relation_right), 
+                                               self.get_missing_keys(relation_right, relation_left)],
+                             })
                 seen.add((relation_left, relation_right))
 
         for relation in self.get_relations():
-            dimensions = set(self.get_relation_attributes(relation))
             join_keys = set(self.get_join_keys(relation))
-            attributes = set(self.get_useful_attributes(relation))
-            measurements = dict()
+            attributes = set(self.get_relation_attributes(relation))
+            measurements = []
+            
             if relation in self.measurement:
                 for semi_ring in self.measurement[relation]:
-                    semi_ring_str = semi_ring.__str__()
-                    cjt = self.cjts[semi_ring_str]
+                    cjt = self.cjts[semi_ring.__str__()]
                     scope = cjt.scope
-                    measurement = {
-                        'name': semi_ring_str,
-                        # 'scope': scope,
-                        # getting all the relations from the edges
-                        # TODO: do we even need to get highlighting info here?
+                    measurements.append({
+                        'name': semi_ring.__str__(relation=False),
                         'relations': [{
                             'name': rel,
-                            'should_highlight': str(scope.highlightRelation(rel)[0]),
-                            'color': str(scope.highlightRelation(rel)[1])
-                        } for rel in self.get_relations()],
-                        'edges': [{'left_rel': edge['source'], 'right_rel': edge['target'],
-                                   'should_highlight': str(scope.highlightEdge(edge['source'], edge['target'])[0]),
-                                   'color': str(scope.highlightEdge(edge['source'], edge['target'])[1])} for edge in links]
-
-                    }
-                    measurements[measurement['name']] = measurement
-
-            measurement_names = list(measurements.keys())
+                            'color': str(scope.highlightRelation(rel)[1]),
+                            'text': str(scope.highlightRelation(rel)[2]),} 
+                            for rel in self.get_relations() 
+                            if scope.highlightRelation(rel)[0]],
+                        'edges': [{
+                            'left_rel': edge['source'], 
+                            'right_rel': edge['target'],
+                            'color': str(scope.highlightEdge(edge['source'], edge['target'])[1]),
+                            'text': str(scope.highlightEdge(edge['source'], edge['target'])[2]),} 
+                            for edge in links 
+                            if scope.highlightEdge(edge['source'], edge['target'])[0]]
+                    })
+                    
             nodes.append({"id": relation,
                           "name": relation,
-                          "measurements": list(measurements.values()),
-                          "attributes": measurement_names + list(attributes),
+                          "measurements": measurements,
+                          "attributes": list(attributes),
                           "join_keys": list(join_keys),
                           })
 

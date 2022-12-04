@@ -77,8 +77,8 @@ class SumSemiRing(SemiRing):
     def get_user_table(self):
         return self.user_table
     
-    def __str__(self):
-        return f'SUM({self.user_table}.{self.attr})'
+    def __str__(self, relation=True):
+        return f'SUM({(self.user_table + ".") if relation else ""}{self.attr})'
 
 
 class CountSemiRing(SemiField):

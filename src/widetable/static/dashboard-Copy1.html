@@ -113,12 +113,12 @@
 </div>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 <script>
-
+    
     graph = {
         "nodes": {{nodes}},
         "links": {{links}}
     }
-
+    
     // height and width of the whole visualization
     var svg = d3.select("#session{{session_id}}")
     svg.on("mousedown", function() {
@@ -165,12 +165,9 @@
         .text((d)=>{return d.name;})
         .on("click", function (d) {
             d3.event.stopPropagation();
-            unHighlightGraph()
-            unHighlightSchema()
-            console.log(d)
-            d3.select(this).classed('highlight',true)
+            unHighlightGraph();
             d.edges.map((e) => highlightRelationEdge(e.left_rel, e.right_rel, e.color))
-            d.relations.map((r) => highlightRelationNode(r.name, r.color, r.text))
+            d.relations.map((r) => highlightRelationNode(r.name, r.color))
         });
 
     schema
@@ -217,8 +214,8 @@
         .on("end", (d,i,nodes) => {
             unHighlight();
             dragended(d,i,nodes);
-            highlightRelationAttribute(d.source.id, d.right_keys)
-            highlightRelationAttribute(d.target.id, d.left_keys)
+            highlightRelationAttribute(d.source.id, d.left_keys)
+            highlightRelationAttribute(d.target.id, d.right_keys)
             highlightRelationNode(d.source.id)
             highlightRelationSchema(d.source.id)
             highlightRelationNode(d.target.id)
@@ -280,6 +277,7 @@
         .attr('id', (d)=>{return "circleText_" + d.id;})
         .attr("dy", -circleRadius)
         .attr('fill', 'black')
+        .text((d)=>{return d.name;})
         .call(nodeDragEvent)
 
     nodeAboveText.style('font-family','cursive');
@@ -321,32 +319,23 @@
     }
 
     function unHighlightGraph() {
-        node
+        svg.selectAll("circle")
            .classed('highlight',false)
            .style('color', null)
 
-        link
+        svg.selectAll("line")
             .classed('highlight',false)
             .style('color', null)
-
-        nodeAboveText
-            .text("")
     }
 
     function unHighlightSchema() {
         schemaArea.selectAll("span")
-            .classed('highlight',false)
-
-    }
-
-    function unExpandSchema() {
-        schemaArea.selectAll("span")
             .classed('expanded',false)
+            .classed('highlight',false)
     }
 
     function unHighlight() {
         unHighlightSchema()
-        unExpandSchema()
         unHighlightGraph()
     }
 
@@ -368,14 +357,11 @@
           .style("opacity", 100);
     }
 
-    function highlightRelationNode(relation, color=null, text="") {
+    function highlightRelationNode(relation, color=null) {
         // highligth node
         svg.select("#circle_" + relation)
            .classed('highlight',true)
            .style('color', color)
-
-        svg.select("#circleText_" + relation)
-           .text(text)
     }
 
     function highlightRelationEdge(soruceRelation, targetRelation, color=null) {
@@ -406,4 +392,6 @@
         d.fx = null;
         d.fy = null;
     }
+
+
 </script>
