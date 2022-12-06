@@ -127,6 +127,7 @@
     })
     var width = +svg.attr("width")
     var height = +svg.attr("height");
+    svg.append('defs').enter()
 
     // attributes for Join Graph
     var circleRadius = 30
@@ -369,7 +370,7 @@
     }
 
     function highlightRelationNode(relation, color=null, text="") {
-        // highligth node
+        // highlight node
         svg.select("#circle_" + relation)
            .classed('highlight',true)
            .style('color', color)
