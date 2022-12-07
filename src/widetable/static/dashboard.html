@@ -14,6 +14,18 @@
         stroke-width: 7px;
     }
 
+    .markers {
+      fill: none;
+      stroke: #808080;
+      stroke-width: 3px;
+    }
+
+    .highlightedMarkers {
+      fill:none;
+      stroke: black;
+      stroke-width: 5px;
+    }
+
     .nodes circle {
         fill: #bbb;
     }
@@ -128,9 +140,51 @@
     var width = +svg.attr("width")
     var height = +svg.attr("height");
 
+
     // attributes for Join Graph
     var circleRadius = 30
     var linkDistance = 120
+
+    var triangleBase = 15
+    var triangleHeight =15
+    var defs = svg.append('defs')
+
+       defs .append('marker')
+        .attr('id','endArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
+        .attr('refX', circleRadius + triangleHeight).attr('refY',triangleBase/2).attr('orient', 'auto')
+        .attr('class', 'markers')
+        .attr('markerUnits', 'userSpaceOnUse')
+        .append('polyline')
+        // crows feet
+        .attr('points', `0 ${triangleBase/2}, ${triangleHeight} 0, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase/2 },0 ${triangleBase/2}, ${triangleHeight} ${triangleBase}`)
+        // triangle ArrowHead
+        // .attr('points',`0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
+      defs.append('marker')
+        .attr('id','startArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
+        .attr('refX',-1*circleRadius).attr('refY',triangleBase/2).attr('orient', 'auto')
+        .attr('class', 'markers')
+        .attr('markerUnits', 'userSpaceOnUse')
+        .append('polyline')
+        //crows feet
+         .attr('points', `0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
+         // triangle
+        // .attr('points',`0 ${triangleBase/2}, ${triangleHeight} 0, ${triangleHeight} ${triangleBase}`)
+
+        defs .append('marker')
+        .attr('id','blackEndArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
+        .attr('refX', circleRadius + triangleHeight).attr('refY',1.5*triangleBase/2).attr('orient', 'auto')
+        .attr('class', 'highlightedMarkers')
+        .attr('markerUnits', 'userSpaceOnUse')
+        .append('polyline')
+        .attr('points', `0 ${1.5*triangleBase/2}, ${triangleHeight+4} 0, 0 ${1.5*triangleBase/2}, ${triangleHeight+4} ${1.5*triangleBase/2},0 ${1.5*triangleBase/2}, ${triangleHeight+4} ${1.5*triangleBase}`)
+
+      defs.append('marker')
+        .attr('id','blackStartArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
+        .attr('refX',-1*circleRadius).attr('refY',1.5*triangleBase/2).attr('orient', 'auto')
+        .attr('class', 'highlightedMarkers')
+        .attr('markerUnits', 'userSpaceOnUse')
+        .append('polyline')
+         .attr('points', `0 0, ${triangleHeight} ${1.5*triangleBase/2}, 0 ${1.5*triangleBase/2}, ${triangleHeight} ${1.5*triangleBase/2}, 0 ${1.5*triangleBase}`)
 
     var schemaArea = d3.select("#session{{session_id}}schema")
 
@@ -204,7 +258,8 @@
         .force("charge", d3.forceManyBody().strength(-280))
         .force("center", d3.forceCenter(width / 2, height / 2));
 
-    //list of link containers
+
+        //list of link containers
     var linkContainers = svg.append('g').attr('class', 'links')
         .selectAll("g")
         .data(graph.links)
@@ -229,8 +284,11 @@
     var link = linkContainers
         .append("line")
         .attr('id', (d)=>{return "edge_" + d.source + "-" + d.target;})
+        .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#endArrowHead)'; else return '';})
+        .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#startArrowHead)'; else return '';})
         .call(edgeDragEvent)
 
+   /*
     var sourceLinkTexts = linkContainers
         .append('text')
         .attr('x',(d)=>{return d.source.x;})
@@ -244,6 +302,7 @@
         .text(function (d, i) {
             return d.multiplicity[1];
         })
+        */
 
     //list of node containers
     var dataEnter = svg
@@ -282,7 +341,10 @@
         .attr('fill', 'black')
         .call(nodeDragEvent)
 
+
     nodeAboveText.style('font-family','cursive');
+
+
 
     simulation
         .nodes(graph.nodes)
@@ -299,14 +361,14 @@
             .attr("x2", (d)=>{return Math.max(0, Math.min(width, d.target.x));})
             .attr("y2", (d)=>{return Math.max(0, Math.min(height, d.target.y));});
 
-        // for the texts on the link
-        sourceLinkTexts
-            .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + 2* (d.target.x - d.source.x) / 5))})
-            .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + 2* (d.target.y - d.source.y) / 5))});
+        // // for the texts on the link
+        // sourceLinkTexts
+        //     .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + 2* (d.target.x - d.source.x) / 5))})
+        //     .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + 2* (d.target.y - d.source.y) / 5))});
 
-        destLinkTexts
-            .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + 3 * (d.target.x - d.source.x) / 5))})
-            .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + 3 * (d.target.y - d.source.y) / 5))});
+        // destLinkTexts
+        //     .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + 3 * (d.target.x - d.source.x) / 5))})
+        //     .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + 3 * (d.target.y - d.source.y) / 5))});
 
         node
             .attr("transform", (d)=>{return "translate(" + Math.max(0, Math.min(width, d.x)) +
@@ -327,6 +389,8 @@
 
         link
             .classed('highlight',false)
+            .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#endArrowHead)'; else return '';})
+           .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#startArrowHead)'; else return '';})
             .style('color', null)
 
         nodeAboveText
@@ -369,7 +433,7 @@
     }
 
     function highlightRelationNode(relation, color=null, text="") {
-        // highligth node
+        // highlight node
         svg.select("#circle_" + relation)
            .classed('highlight',true)
            .style('color', color)
@@ -381,6 +445,8 @@
     function highlightRelationEdge(soruceRelation, targetRelation, color=null) {
         svg.select("#edge_" + soruceRelation + "-" + targetRelation)
            .classed('highlight',true)
+           .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#blackEndArrowHead)'; else return '';})
+           .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#blackStartArrowHead)'; else return '';})
            .style('color', color)
     }
 
