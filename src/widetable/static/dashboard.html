@@ -159,10 +159,10 @@
         .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2 + verticalOffset)
         .attr('orient', 'auto-start-reverse').attr('class','markers')
         .attr('markerUnits', 'userSpaceOnUse')
-           .attr('transform', `translate(0,${verticalOffset})`)
         .append('polyline')
         // triangle ArrowHead
            .attr('class', 'markers')
+           .attr('transform', `translate(0,${verticalOffset})`)
          .attr('points',`0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} 0, 0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} ${triangleBase}`)
         // .attr('points',`0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
 
@@ -175,6 +175,7 @@
         .append('polyline')
         .attr('class', 'markers highlight')
         // triangle ArrowHead
+        .attr('transform', `translate(0,${verticalOffset})`)
         .attr('points',`0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} 0, 0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} ${triangleBase}`)
 
 
