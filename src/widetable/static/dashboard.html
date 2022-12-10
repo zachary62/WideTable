@@ -293,7 +293,7 @@
         .attr('x2', function(d){return d.target.x;})
         .attr('y2', function(d){return d.target.y;})
         .attr('class', 'clickable_edge')
-        // .call(edgeDragEvent)
+        .call(edgeDragEvent)
 
     var sourceLinkTexts = linkContainers
         .append('text')
