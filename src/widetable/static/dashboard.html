@@ -254,21 +254,6 @@
 
 
 
-    var sourceLinkTexts = linkContainers
-        .append('text')
-        .attr('x',(d)=>{return d.source.x;})
-        .attr('y',(d)=>{return d.source.y;})
-        .text((d, i)=>{return 'placeholder';})
-
-    /*
-     var destLinkTexts = linkContainers
-         .append('text')
-         .attr('x', (d)=>{return d.target.x;})
-         .attr('y', (d)=>{return d.target.y;})
-         .text(function (d, i) {
-             return d.multiplicity[1];
-         })
-         */
 
 
     //list of link containers
@@ -298,7 +283,24 @@
         .attr('id', (d)=>{return "edge_" + d.source + "-" + d.target;})
         .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHead)'; else return '';})
         .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; else return '';})
-        .call(edgeDragEvent)
+        .call(edgeDragEvent);
+
+    var sourceLinkTexts = linkContainers
+        .append('text')
+        .attr('x',(d)=>{return d.source.x;})
+        .attr('y',(d)=>{return d.source.y;})
+        .text((d, i)=>{return 'placeholder';})
+
+    /*
+     var destLinkTexts = linkContainers
+         .append('text')
+         .attr('x', (d)=>{return d.target.x;})
+         .attr('y', (d)=>{return d.target.y;})
+         .text(function (d, i) {
+             return d.multiplicity[1];
+         })
+         */
+
 
     //list of node containers
     var dataEnter = svg
