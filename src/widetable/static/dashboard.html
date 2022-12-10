@@ -254,21 +254,21 @@
 
 
 
-   /*
     var sourceLinkTexts = linkContainers
         .append('text')
         .attr('x',(d)=>{return d.source.x;})
         .attr('y',(d)=>{return d.source.y;})
-        .text((d, i)=>{return d.multiplicity[0] + '';})
+        .text((d, i)=>{return 'placeholder';})
 
-    var destLinkTexts = linkContainers
-        .append('text')
-        .attr('x', (d)=>{return d.target.x;})
-        .attr('y', (d)=>{return d.target.y;})
-        .text(function (d, i) {
-            return d.multiplicity[1];
-        })
-        */
+    /*
+     var destLinkTexts = linkContainers
+         .append('text')
+         .attr('x', (d)=>{return d.target.x;})
+         .attr('y', (d)=>{return d.target.y;})
+         .text(function (d, i) {
+             return d.multiplicity[1];
+         })
+         */
 
 
     //list of link containers
@@ -370,9 +370,9 @@
             });
 
         // // for the texts on the link
-        // sourceLinkTexts
-        //     .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + 2* (d.target.x - d.source.x) / 5))})
-        //     .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + 2* (d.target.y - d.source.y) / 5))});
+        sourceLinkTexts
+            .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + (d.target.x - d.source.x) / 2))})
+            .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + (d.target.y - d.source.y) / 2))});
 
         // destLinkTexts
         //     .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + 3 * (d.target.x - d.source.x) / 5))})
