@@ -151,19 +151,22 @@
        defs .append('marker')
         .attr('id','arrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
         .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2)
-        .attr('orient', 'auto-start-reverse').attr('class', 'markers')
+        .attr('orient', 'auto-start-reverse')
         .attr('markerUnits', 'userSpaceOnUse')
         .append('polyline')
         // triangle ArrowHead
+           .attr('class', 'markers')
          .attr('points',`0 ${triangleBase/2}, ${triangleHeight} 0, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase}`)
         // .attr('points',`0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
 
     defs .append('marker')
         .attr('id','arrowHeadHighlight').attr('markerWidth','100px').attr('markerHeight','100px')
         .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2)
-        .attr('orient', 'auto-start-reverse').attr('class', 'markers highlight')
+        .attr('orient', 'auto-start-reverse')
+        // .attr('class', 'markers highlight')
         .attr('markerUnits', 'userSpaceOnUse')
         .append('polyline')
+        .attr('class', 'markers highlight')
         // triangle ArrowHead
         .attr('points',`0 ${triangleBase/2}, ${triangleHeight} 0, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase}`)
 
