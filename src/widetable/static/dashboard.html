@@ -292,7 +292,7 @@
 
     var clickableLinks = linkContainers
         .append('line')
-        .attr('id', (d) => {'clickable_edge_' + d.source + '-' + d.target})
+        .attr('id', (d) => {return 'clickable_edge_' + d.source + '-' + d.target})
         .attr('x1', function(d){return d.source.x;})
         .attr('y1', function(d){return d.source.y;})
         .attr('x2', function(d){return d.target.x;})
