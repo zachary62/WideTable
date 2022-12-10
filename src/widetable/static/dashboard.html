@@ -374,8 +374,13 @@
             .attr("y", function (d) {return Math.max(circleRadius/2, Math.min(height-circleRadius/2, d.y - this.getBBox().height / 2 ))});
 
         nodeText
-            .attr("x", function (d) {return Math.max(circleRadius/2, Math.min(width-circleRadius/2, d.x - this.getBBox().width / 2))})
-            .attr("y", function (d) {return Math.max(circleRadius/2, Math.min(height-circleRadius/2, d.y - this.getBBox().height / 2 ))});
+            .attr("x", function (d) {
+              nodeX = Math.max(circleRadius, Math.min(width-circleRadius, d.x))
+              return Math.max(0, Math.min(width, nodeX - this.getBBox().width / 2))})
+            .attr("y", function (d) {
+              nodeY = Math.max(circleRadius, Math.min(height-circleRadius, d.y))
+              return Math.max(0, Math.min(height, nodeY - this.getBBox().height / 2 ))});
+
     }
 
     function unHighlightGraph() {
