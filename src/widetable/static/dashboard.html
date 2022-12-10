@@ -144,8 +144,8 @@
     var circleRadius = 30
     var linkDistance = 120
 
-    var triangleBase = 15
-    var triangleHeight =15
+    var triangleBase = 20
+    var triangleHeight =20
     var defs = svg.append('defs')
 
        defs .append('marker')
@@ -169,32 +169,6 @@
         // triangle ArrowHead
         .attr('points',`0 ${triangleBase/2}, ${triangleHeight} 0, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase}`)
 
-      defs.append('marker')
-        .attr('id','startArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
-        .attr('refX',-1*circleRadius).attr('refY',triangleBase/2).attr('orient', 'auto')
-        .attr('class', 'markers')
-        .attr('markerUnits', 'userSpaceOnUse')
-        .append('polyline')
-        //crows feet
-         .attr('points', `0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
-         // triangle
-        // .attr('points',`0 ${triangleBase/2}, ${triangleHeight} 0, ${triangleHeight} ${triangleBase}`)
-
-        defs .append('marker')
-        .attr('id','blackEndArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
-        .attr('refX', circleRadius + triangleHeight).attr('refY',1.5*triangleBase/2).attr('orient', 'auto')
-        .attr('class', 'highlightedMarkers')
-        .attr('markerUnits', 'userSpaceOnUse')
-        .append('polyline')
-        .attr('points', `0 ${1.5*triangleBase/2}, ${triangleHeight+4} 0, 0 ${1.5*triangleBase/2}, ${triangleHeight+4} ${1.5*triangleBase/2},0 ${1.5*triangleBase/2}, ${triangleHeight+4} ${1.5*triangleBase}`)
-
-      defs.append('marker')
-        .attr('id','blackStartArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
-        .attr('refX',-1*circleRadius).attr('refY',1.5*triangleBase/2).attr('orient', 'auto')
-        .attr('class', 'highlightedMarkers')
-        .attr('markerUnits', 'userSpaceOnUse')
-        .append('polyline')
-         .attr('points', `0 0, ${triangleHeight} ${1.5*triangleBase/2}, 0 ${1.5*triangleBase/2}, ${triangleHeight} ${1.5*triangleBase/2}, 0 ${1.5*triangleBase}`)
 
     var schemaArea = d3.select("#session{{session_id}}schema")
 
