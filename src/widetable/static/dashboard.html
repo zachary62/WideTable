@@ -17,6 +17,7 @@
         opacity: 0;
         stroke-width: 8px;
     }
+
     .markers polyline {
       fill: none;
       stroke: #aaa;
@@ -299,7 +300,8 @@
         .append('text')
         .attr('x',(d)=>{return d.source.x;})
         .attr('y',(d)=>{return d.source.y;})
-        .text((d, i)=>{return 'placeholder';});
+        .text((d, i)=>{return 'placeholder';})
+        .call(edgeDragEvent)
 
     /*
      var destLinkTexts = linkContainers
