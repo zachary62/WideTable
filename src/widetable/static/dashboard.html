@@ -146,28 +146,34 @@
 
     var triangleBase = 20
     var triangleHeight =20
+    //svg elements can be clipped and marker defs are rendered in the corner for some reason
+    //this offset will move it out of the corner
+    var verticalOffset = 5
+
+    // this is to make the edges a bit longer.
+    var edgeLengthModifier = 3
     var defs = svg.append('defs')
 
        defs .append('marker')
         .attr('id','arrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
-        .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2)
+        .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2 + verticalOffset)
         .attr('orient', 'auto-start-reverse').attr('class','markers')
         .attr('markerUnits', 'userSpaceOnUse')
         .append('polyline')
         // triangle ArrowHead
            .attr('class', 'markers')
-         .attr('points',`0 ${triangleBase/2}, ${triangleHeight} 0, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase}`)
+         .attr('points',`0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} 0, 0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} ${triangleBase}`)
         // .attr('points',`0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
 
     defs .append('marker')
         .attr('id','arrowHeadHighlight').attr('markerWidth','100px').attr('markerHeight','100px')
-        .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2)
+        .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2 + verticalOffset)
         .attr('orient', 'auto-start-reverse').attr('class', 'markers highlight')
         .attr('markerUnits', 'userSpaceOnUse')
         .append('polyline')
         .attr('class', 'markers highlight')
         // triangle ArrowHead
-        .attr('points',`0 ${triangleBase/2}, ${triangleHeight} 0, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase}`)
+        .attr('points',`0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} 0, 0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} ${triangleBase}`)
 
 
     var schemaArea = d3.select("#session{{session_id}}schema")
@@ -358,15 +364,15 @@
         //     .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + 3 * (d.target.y - d.source.y) / 5))});
 
         node
-            .attr("transform", (d)=>{return "translate(" + Math.max(0, Math.min(width, d.x)) +
-                                    ", " + Math.max(0, Math.min(height, d.y)) + ")";});
+            .attr("transform", (d)=>{return "translate(" + Math.max(circleRadius, Math.min(width-circleRadius, d.x)) +
+                                    ", " + Math.max(circleRadius, Math.min(height-circleRadius, d.y)) + ")";});
         nodeAboveText
-            .attr("x", function (d) {return Math.max(0, Math.min(width, d.x - this.getBBox().width / 2))})
-            .attr("y", function (d) {return Math.max(0, Math.min(height, d.y - this.getBBox().height / 2 ))});
+            .attr("x", function (d) {return Math.max(circleRadius/2, Math.min(width-circleRadius/2, d.x - this.getBBox().width / 2))})
+            .attr("y", function (d) {return Math.max(circleRadius/2, Math.min(height-circleRadius/2, d.y - this.getBBox().height / 2 ))});
 
         nodeText
-            .attr("x", function (d) {return Math.max(0, Math.min(width, d.x - this.getBBox().width / 2))})
-            .attr("y", function (d) {return Math.max(0, Math.min(height, d.y - this.getBBox().height / 2 ))});
+            .attr("x", function (d) {return Math.max(circleRadius/2, Math.min(width-circleRadius/2, d.x - this.getBBox().width / 2))})
+            .attr("y", function (d) {return Math.max(circleRadius/2, Math.min(height-circleRadius/2, d.y - this.getBBox().height / 2 ))});
     }
 
     function unHighlightGraph() {
