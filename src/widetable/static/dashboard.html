@@ -151,7 +151,7 @@
        defs .append('marker')
         .attr('id','arrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
         .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2)
-        .attr('orient', 'auto-start-reverse')
+        .attr('orient', 'auto-start-reverse').attr('class','markers')
         .attr('markerUnits', 'userSpaceOnUse')
         .append('polyline')
         // triangle ArrowHead
@@ -162,8 +162,7 @@
     defs .append('marker')
         .attr('id','arrowHeadHighlight').attr('markerWidth','100px').attr('markerHeight','100px')
         .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2)
-        .attr('orient', 'auto-start-reverse')
-        // .attr('class', 'markers highlight')
+        .attr('orient', 'auto-start-reverse').attr('class', 'markers highlight')
         .attr('markerUnits', 'userSpaceOnUse')
         .append('polyline')
         .attr('class', 'markers highlight')
