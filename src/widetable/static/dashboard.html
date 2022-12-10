@@ -285,12 +285,13 @@
         .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; else return '';})
         .call(edgeDragEvent);
 
-    var clickableLinks = linkContainers.append('line')
+    var clickableLinks = linkContainers
+        .append('line')
         .attr('id', 'clickable_edge_' + d.source + '-' + d.target)
-        .attr('x1', (d)=>{return d.source.x;})
-        .attr('y1', (d)=>{return d.source.y;})
-        .attr('x2', (d)=>{return d.target.x;})
-        .attr('y2', (d)=>{return d.target.y;})
+        .attr('x1', function(d){return d.source.x;})
+        .attr('y1', function(d){return d.source.y;})
+        .attr('x2', function(d){return d.target.x;})
+        .attr('y2', function(d){return d.target.y;})
         .attr('class', 'clickable_edge')
         .attr('opacity', 0)
         .call(edgeDragEvent)
