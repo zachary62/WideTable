@@ -352,10 +352,22 @@
 
     function ticked() {
         // make sure that all the links are within boundry
-        link.attr("x1", (d)=>{return Math.max(0, Math.min(width, d.source.x));})
-            .attr("y1", (d)=>{return Math.max(0, Math.min(height, d.source.y));})
-            .attr("x2", (d)=>{return Math.max(0, Math.min(width, d.target.x));})
-            .attr("y2", (d)=>{return Math.max(0, Math.min(height, d.target.y));});
+        link.attr("x1", (d)=>{
+                nodeX = Math.max(circleRadius, Math.min(width-circleRadius, d.source.x))
+                return Math.max(0, Math.min(width, nodeX));
+            })
+            .attr("y1", (d)=>{
+                nodeY = Math.max(circleRadius, Math.min(height-circleRadius, d.source.y))
+                return Math.max(0, Math.min(height, nodeY));
+            })
+            .attr("x2", (d)=>{
+                nodeX = Math.max(circleRadius, Math.min(width-circleRadius, d.target.x))
+                return Math.max(0, Math.min(width, nodeX));
+            })
+            .attr("y2", (d)=>{
+                nodeY = Math.max(circleRadius, Math.min(height-circleRadius, d.target.y))
+                return Math.max(0, Math.min(height, nodeY));
+            });
 
         // // for the texts on the link
         // sourceLinkTexts
