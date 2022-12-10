@@ -261,6 +261,36 @@
         })
         */
 
+
+    //list of link containers
+    var linkContainers = svg.append('g').attr('class', 'links')
+        .selectAll("g")
+        .data(graph.links)
+        .enter()
+        .append("g")
+
+    var edgeDragEvent = d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", (d,i,nodes) => {
+            unHighlight();
+            dragended(d,i,nodes);
+            highlightRelationAttribute(d.source.id, d.right_keys)
+            highlightRelationAttribute(d.target.id, d.left_keys)
+            highlightRelationNode(d.source.id)
+            highlightRelationSchema(d.source.id)
+            highlightRelationNode(d.target.id)
+            highlightRelationSchema(d.target.id)
+            highlightRelationEdge(d.source.id, d.target.id);
+        })
+
+    var link = linkContainers
+        .append("line")
+        .attr('id', (d)=>{return "edge_" + d.source + "-" + d.target;})
+        .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHead)'; else return '';})
+        .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; else return '';})
+        .call(edgeDragEvent)
+
     //list of node containers
     var dataEnter = svg
         .append("g")
@@ -302,34 +332,6 @@
     nodeAboveText.style('font-family','cursive');
 
 
-        //list of link containers
-    var linkContainers = svg.append('g').attr('class', 'links')
-        .selectAll("g")
-        .data(graph.links)
-        .enter()
-        .append("g")
-
-    var edgeDragEvent = d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", (d,i,nodes) => {
-            unHighlight();
-            dragended(d,i,nodes);
-            highlightRelationAttribute(d.source.id, d.right_keys)
-            highlightRelationAttribute(d.target.id, d.left_keys)
-            highlightRelationNode(d.source.id)
-            highlightRelationSchema(d.source.id)
-            highlightRelationNode(d.target.id)
-            highlightRelationSchema(d.target.id)
-            highlightRelationEdge(d.source.id, d.target.id);
-        })
-
-    var link = linkContainers
-        .append("line")
-        .attr('id', (d)=>{return "edge_" + d.source + "-" + d.target;})
-        .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHead)'; else return '';})
-        .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; else return '';})
-        .call(edgeDragEvent)
 
     simulation
         .nodes(graph.nodes)
