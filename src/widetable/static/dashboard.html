@@ -373,8 +373,8 @@
 
         // // for the texts on the link
         sourceLinkTexts
-            .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + (d.target.x - d.source.x) / 2))})
-            .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + (d.target.y - d.source.y) / 2))});
+            .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + (d.target.x - d.source.x) / 2 - this.getBBox().width/2))})
+            .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + (d.target.y - d.source.y)))});
 
         // destLinkTexts
         //     .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + 3 * (d.target.x - d.source.x) / 5))})
