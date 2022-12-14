@@ -13,17 +13,25 @@
         stroke: black;
         stroke-width: 7px;
     }
-
-    .markers {
-      fill: none;
-      stroke: #808080;
-      stroke-width: 3px;
+    .links line.clickable_edge  {
+        opacity: 0;
+        stroke-width: 12px;
+    }
+    .links line.clickable_edge.highlight  {
+        opacity: 0;
+        stroke-width: 16px;
     }
 
-    .highlightedMarkers {
-      fill:none;
-      stroke: black;
+    .markers polyline {
+      fill: none;
+      stroke: #aaa;
       stroke-width: 5px;
+    }
+
+    .markers polyline.highlight {
+        fill: none;
+        stroke: black;
+        stroke-width: 7px;
     }
 
     .nodes circle {
@@ -145,46 +153,40 @@
     var circleRadius = 30
     var linkDistance = 120
 
-    var triangleBase = 15
-    var triangleHeight =15
+    var triangleBase = 25
+    var triangleHeight =20
+    //svg elements can be clipped and marker defs are rendered in the corner for some reason
+    //this offset will move it out of the corner
+    var verticalOffset = 5
+
+    // this is to make the edges a bit longer.
+    var edgeLengthModifier = 3
     var defs = svg.append('defs')
 
        defs .append('marker')
-        .attr('id','endArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
-        .attr('refX', circleRadius + triangleHeight).attr('refY',triangleBase/2).attr('orient', 'auto')
-        .attr('class', 'markers')
+        .attr('id','arrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
+        .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2 + verticalOffset)
+        .attr('orient', 'auto-start-reverse').attr('class','markers')
         .attr('markerUnits', 'userSpaceOnUse')
         .append('polyline')
-        // crows feet
-        .attr('points', `0 ${triangleBase/2}, ${triangleHeight} 0, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase/2 },0 ${triangleBase/2}, ${triangleHeight} ${triangleBase}`)
         // triangle ArrowHead
+           .attr('class', 'markers')
+           .attr('transform', `translate(0,${verticalOffset})`)
+         .attr('points',`0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} 0, 0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} ${triangleBase}`)
         // .attr('points',`0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
-      defs.append('marker')
-        .attr('id','startArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
-        .attr('refX',-1*circleRadius).attr('refY',triangleBase/2).attr('orient', 'auto')
-        .attr('class', 'markers')
-        .attr('markerUnits', 'userSpaceOnUse')
-        .append('polyline')
-        //crows feet
-         .attr('points', `0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase/2}, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
-         // triangle
-        // .attr('points',`0 ${triangleBase/2}, ${triangleHeight} 0, ${triangleHeight} ${triangleBase}`)
 
-        defs .append('marker')
-        .attr('id','blackEndArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
-        .attr('refX', circleRadius + triangleHeight).attr('refY',1.5*triangleBase/2).attr('orient', 'auto')
-        .attr('class', 'highlightedMarkers')
+    defs .append('marker')
+        .attr('id','arrowHeadHighlight').attr('markerWidth','100px').attr('markerHeight','100px')
+        .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2 + verticalOffset)
+        .attr('orient', 'auto-start-reverse').attr('class', 'markers highlight')
         .attr('markerUnits', 'userSpaceOnUse')
+        .attr('transform', `translate(0,${verticalOffset})`)
         .append('polyline')
-        .attr('points', `0 ${1.5*triangleBase/2}, ${triangleHeight+4} 0, 0 ${1.5*triangleBase/2}, ${triangleHeight+4} ${1.5*triangleBase/2},0 ${1.5*triangleBase/2}, ${triangleHeight+4} ${1.5*triangleBase}`)
+        .attr('class', 'markers highlight')
+        // triangle ArrowHead
+        .attr('transform', `translate(0,${verticalOffset})`)
+        .attr('points',`0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} 0, 0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} ${triangleBase}`)
 
-      defs.append('marker')
-        .attr('id','blackStartArrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
-        .attr('refX',-1*circleRadius).attr('refY',1.5*triangleBase/2).attr('orient', 'auto')
-        .attr('class', 'highlightedMarkers')
-        .attr('markerUnits', 'userSpaceOnUse')
-        .append('polyline')
-         .attr('points', `0 0, ${triangleHeight} ${1.5*triangleBase/2}, 0 ${1.5*triangleBase/2}, ${triangleHeight} ${1.5*triangleBase/2}, 0 ${1.5*triangleBase}`)
 
     var schemaArea = d3.select("#session{{session_id}}schema")
 
@@ -259,7 +261,7 @@
         .force("center", d3.forceCenter(width / 2, height / 2));
 
 
-        //list of link containers
+    //list of link containers
     var linkContainers = svg.append('g').attr('class', 'links')
         .selectAll("g")
         .data(graph.links)
@@ -284,25 +286,37 @@
     var link = linkContainers
         .append("line")
         .attr('id', (d)=>{return "edge_" + d.source + "-" + d.target;})
-        .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#endArrowHead)'; else return '';})
-        .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#startArrowHead)'; else return '';})
+        .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHead)'; else return '';})
+        .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; else return '';})
+        .call(edgeDragEvent);
+
+    var clickableLinks = linkContainers
+        .append('line')
+        .attr('id', (d) => {return 'clickable_edge_' + d.source + '-' + d.target})
+        .attr('x1', function(d){return d.source.x;})
+        .attr('y1', function(d){return d.source.y;})
+        .attr('x2', function(d){return d.target.x;})
+        .attr('y2', function(d){return d.target.y;})
+        .attr('class', 'clickable_edge')
         .call(edgeDragEvent)
 
-   /*
     var sourceLinkTexts = linkContainers
         .append('text')
         .attr('x',(d)=>{return d.source.x;})
         .attr('y',(d)=>{return d.source.y;})
-        .text((d, i)=>{return d.multiplicity[0] + '';})
+        .text((d, i)=>{return 'placeholder';})
+        .call(edgeDragEvent)
 
-    var destLinkTexts = linkContainers
-        .append('text')
-        .attr('x', (d)=>{return d.target.x;})
-        .attr('y', (d)=>{return d.target.y;})
-        .text(function (d, i) {
-            return d.multiplicity[1];
-        })
-        */
+    /*
+     var destLinkTexts = linkContainers
+         .append('text')
+         .attr('x', (d)=>{return d.target.x;})
+         .attr('y', (d)=>{return d.target.y;})
+         .text(function (d, i) {
+             return d.multiplicity[1];
+         })
+         */
+
 
     //list of node containers
     var dataEnter = svg
@@ -356,30 +370,66 @@
 
     function ticked() {
         // make sure that all the links are within boundry
-        link.attr("x1", (d)=>{return Math.max(0, Math.min(width, d.source.x));})
-            .attr("y1", (d)=>{return Math.max(0, Math.min(height, d.source.y));})
-            .attr("x2", (d)=>{return Math.max(0, Math.min(width, d.target.x));})
-            .attr("y2", (d)=>{return Math.max(0, Math.min(height, d.target.y));});
+        link.attr("x1", (d)=>{
+                nodeX = Math.max(circleRadius, Math.min(width-circleRadius, d.source.x))
+                return Math.max(0, Math.min(width, nodeX));
+            })
+            .attr("y1", (d)=>{
+                nodeY = Math.max(circleRadius, Math.min(height-circleRadius, d.source.y))
+                return Math.max(0, Math.min(height, nodeY));
+            })
+            .attr("x2", (d)=>{
+                nodeX = Math.max(circleRadius, Math.min(width-circleRadius, d.target.x))
+                return Math.max(0, Math.min(width, nodeX));
+            })
+            .attr("y2", (d)=>{
+                nodeY = Math.max(circleRadius, Math.min(height-circleRadius, d.target.y))
+                return Math.max(0, Math.min(height, nodeY));
+            });
+
+        clickableLinks.attr("x1", (d)=>{
+                nodeX = Math.max(circleRadius, Math.min(width-circleRadius, d.source.x))
+                return Math.max(0, Math.min(width, nodeX));
+            })
+            .attr("y1", (d)=>{
+                nodeY = Math.max(circleRadius, Math.min(height-circleRadius, d.source.y))
+                return Math.max(0, Math.min(height, nodeY));
+            })
+            .attr('x2', (d)=>{
+                nodeX = Math.max(circleRadius, Math.min(width-circleRadius, d.target.x))
+                return Math.max(0, Math.min(width, nodeX));
+            })
+            .attr('y2', (d)=>{
+                nodeY = Math.max(circleRadius, Math.min(height-circleRadius, d.target.y))
+                return Math.max(0, Math.min(height, nodeY));
+            });
 
         // // for the texts on the link
-        // sourceLinkTexts
-        //     .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + 2* (d.target.x - d.source.x) / 5))})
-        //     .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + 2* (d.target.y - d.source.y) / 5))});
+        sourceLinkTexts
+            .attr('x', function(d) {
+                return Math.max(0, Math.min(width,d.source.x + (d.target.x - d.source.x) / 2 - this.getBBox().width/2))
+              })
+            .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + (d.target.y - d.source.y)/2))});
 
         // destLinkTexts
         //     .attr('x', (d)=>{return Math.max(0, Math.min(width,d.source.x + 3 * (d.target.x - d.source.x) / 5))})
         //     .attr('y', (d)=>{return Math.max(0, Math.min(height, d.source.y + 3 * (d.target.y - d.source.y) / 5))});
 
         node
-            .attr("transform", (d)=>{return "translate(" + Math.max(0, Math.min(width, d.x)) +
-                                    ", " + Math.max(0, Math.min(height, d.y)) + ")";});
+            .attr("transform", (d)=>{return "translate(" + Math.max(circleRadius, Math.min(width-circleRadius, d.x)) +
+                                    ", " + Math.max(circleRadius, Math.min(height-circleRadius, d.y)) + ")";});
         nodeAboveText
-            .attr("x", function (d) {return Math.max(0, Math.min(width, d.x - this.getBBox().width / 2))})
-            .attr("y", function (d) {return Math.max(0, Math.min(height, d.y - this.getBBox().height / 2 ))});
+            .attr("x", function (d) {return Math.max(circleRadius/2, Math.min(width-circleRadius/2, d.x - this.getBBox().width / 2))})
+            .attr("y", function (d) {return Math.max(circleRadius/2, Math.min(height-circleRadius/2, d.y - this.getBBox().height / 2 ))});
 
         nodeText
-            .attr("x", function (d) {return Math.max(0, Math.min(width, d.x - this.getBBox().width / 2))})
-            .attr("y", function (d) {return Math.max(0, Math.min(height, d.y - this.getBBox().height / 2 ))});
+            .attr("x", function (d) {
+              nodeX = Math.max(circleRadius, Math.min(width-circleRadius, d.x))
+              return Math.max(0, Math.min(width, nodeX - this.getBBox().width / 2))})
+            .attr("y", function (d) {
+              nodeY = Math.max(circleRadius, Math.min(height-circleRadius, d.y))
+              return Math.max(0, Math.min(height, nodeY - this.getBBox().height / 2 ))});
+
     }
 
     function unHighlightGraph() {
@@ -389,9 +439,11 @@
 
         link
             .classed('highlight',false)
-            .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#endArrowHead)'; else return '';})
-           .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#startArrowHead)'; else return '';})
+            .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHead)'; else return '';})
+           .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; else return '';})
             .style('color', null)
+
+        clickableLinks.classed('highlight',false);
 
         nodeAboveText
             .text("")
@@ -445,9 +497,11 @@
     function highlightRelationEdge(soruceRelation, targetRelation, color=null) {
         svg.select("#edge_" + soruceRelation + "-" + targetRelation)
            .classed('highlight',true)
-           .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#blackEndArrowHead)'; else return '';})
-           .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#blackStartArrowHead)'; else return '';})
+           .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHeadHighlight)'; else return '';})
+           .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHeadHighlight)'; else return '';})
            .style('color', color)
+        svg.select("#clickable_edge_" + soruceRelation + "-" + targetRelation)
+            .classed('highlight',true)
     }
 
     function highlightRelationAttribute(relation, attribute) {
