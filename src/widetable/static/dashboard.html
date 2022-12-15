@@ -7,31 +7,31 @@
 
     .links line {
         stroke: #aaa;
-        stroke-width: 5px;
+        stroke-width: 2px;
     }
     .links line.highlight{
         stroke: black;
-        stroke-width: 7px;
+        stroke-width: 4px;
     }
     .links line.clickable_edge  {
         opacity: 0;
-        stroke-width: 12px;
+        stroke-width: 20px;
     }
     .links line.clickable_edge.highlight  {
         opacity: 0;
-        stroke-width: 16px;
+        stroke-width: 22px;
     }
 
     .markers polyline {
       fill: none;
       stroke: #aaa;
-      stroke-width: 5px;
+      stroke-width: 2px;
     }
 
     .markers polyline.highlight {
         fill: none;
         stroke: black;
-        stroke-width: 7px;
+        stroke-width: 4px;
     }
 
     .nodes circle {
@@ -153,26 +153,27 @@
     var circleRadius = 30
     var linkDistance = 120
 
-    var triangleBase = 25
-    var triangleHeight =20
+    var triangleBase = 15
+    var triangleHeight =13
     //svg elements can be clipped and marker defs are rendered in the corner for some reason
     //this offset will move it out of the corner
     var verticalOffset = 5
 
     // this is to make the edges a bit longer.
     var edgeLengthModifier = 3
+
     var defs = svg.append('defs')
 
-       defs .append('marker')
-        .attr('id','arrowHead').attr('markerWidth','100px').attr('markerHeight','100px')
+    defs.append('marker')
+        .attr('id','arrowHead').attr('markerWidth','30').attr('markerHeight','30')
         .attr('refX', circleRadius + triangleHeight-3).attr('refY',triangleBase/2 + verticalOffset)
-        .attr('orient', 'auto-start-reverse').attr('class','markers')
+        .attr('orient', 'auto-start-reverse')
+        .attr('class','markers')
         .attr('markerUnits', 'userSpaceOnUse')
         .append('polyline')
         // triangle ArrowHead
-           .attr('class', 'markers')
-           .attr('transform', `translate(0,${verticalOffset})`)
-         .attr('points',`0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} 0, 0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} ${triangleBase}`)
+        .attr('transform', `translate(0,${verticalOffset})`)
+        .attr('points',`0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} 0, 0 ${triangleBase/2}, ${triangleHeight +edgeLengthModifier} ${triangleBase}`)
         // .attr('points',`0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
 
     defs .append('marker')
@@ -292,7 +293,7 @@
 
     var clickableLinks = linkContainers
         .append('line')
-        .attr('id', (d) => {return 'clickable_edge_' + d.source + '-' + d.target})
+        .attr('id', (d) => {return 'clickable_edge_' + d.source + '_' + d.target})
         .attr('x1', function(d){return d.source.x;})
         .attr('y1', function(d){return d.source.y;})
         .attr('x2', function(d){return d.target.x;})
@@ -304,7 +305,7 @@
         .append('text')
         .attr('x',(d)=>{return d.source.x;})
         .attr('y',(d)=>{return d.source.y;})
-        .text((d, i)=>{return 'placeholder';})
+        .text((d, i)=>{return 'txt';})
         .call(edgeDragEvent)
 
     /*
@@ -500,7 +501,7 @@
            .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHeadHighlight)'; else return '';})
            .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHeadHighlight)'; else return '';})
            .style('color', color)
-        svg.select("#clickable_edge_" + soruceRelation + "-" + targetRelation)
+        svg.select("#clickable_edge_" + soruceRelation + "_" + targetRelation)
             .classed('highlight',true)
     }
 
