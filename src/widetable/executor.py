@@ -19,7 +19,7 @@ def ExecutorFactory(con=None):
     elif issubclass(type(con), Executor):
         return con
     elif type(con).__name__ == 'DuckDBPyConnection':
-        return DuckdbExecutor(con, debug=True)
+        return DuckdbExecutor(con)
     else:
         raise ExecutorException("Unknown connector with type " + type(con).__name__)
         
