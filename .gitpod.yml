@@ -1,0 +1,15 @@
+ports:
+  - port: 5000
+    onOpen: open-preview
+    description: Flask App preview
+
+tasks:
+  - init: |
+      pip install -r requirements.txt
+      pip install flask
+      export FLASK_APP=server.py
+      export FLASK_ENV=development
+      
+  - command: |
+      cd srcs
+      flask run
