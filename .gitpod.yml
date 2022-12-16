@@ -11,5 +11,5 @@ tasks:
       export FLASK_ENV=development
       
   - command: |
-      cd srcs
+      cd src
       flask run
