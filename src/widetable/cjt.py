@@ -94,7 +94,7 @@ class CJT(JoinGraph):
                     
     def add_relation(self,
                      relation: str,
-                     attrs: list = [],
+                     attrs: list = None,
                      relation_address=None):
         super().add_relation(relation, attrs=attrs, relation_address=relation_address)
 

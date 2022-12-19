@@ -2,7 +2,7 @@ import duckdb
 
 from widetable.cjt import CJT
 from widetable.joingraph import JoinGraph
-from widetable.semiring import AvgSemiRing
+from widetable.semiring import AvgSemiRing, SumSemiRing
 from widetable.dashboard import DashBoard
 
 
