@@ -64,3 +64,28 @@ def initialize_tpch_small_dashboard():
     dashboard.add_join('partsupp', 'part', ['ps_partkey'], ['p_partkey']);
     return dashboard
 
+def initialize_tpch_for_sample_query():
+    duck_db_conn = duckdb.connect(database=':memory:')
+    join_graph = JoinGraph(duck_db_conn)
+    cjt = CJT(semi_ring=SumSemiRing('orders', 'o_totalprice'), join_graph=join_graph)
+    cjt.add_relation('orders', relation_address='../data/tpch_10mb/orders.parquet')
+    cjt.add_relation('customer', relation_address='../data/tpch_10mb/customer.parquet')
+    cjt.add_relation('nation', relation_address='../data/tpch_10mb/nation.parquet')
+    cjt.add_relation('region', relation_address='../data/tpch_10mb/region.parquet')
+
+    cjt.add_join('customer', 'orders', ['c_custkey'], ['o_custkey']);
+    cjt.add_join('region', 'nation', ['r_regionkey'], ['n_regionkey']);
+    cjt.add_join('nation', 'customer', ['n_nationkey'], ['c_nationkey']);
+    return cjt
+
+
+def initialize_tpch_small():
+    duck_db_conn = duckdb.connect(database=':memory:')
+    join_graph = JoinGraph(duck_db_conn)
+    cjt = CJT(semi_ring=SumSemiRing('orders','o_totalprice'), join_graph=join_graph)
+    cjt.add_relation('orders', relation_address='../data/tpch_10mb/orders.parquet')
+    cjt.add_relation('customer', relation_address='../data/tpch_10mb/customer.parquet')
+
+    cjt.add_join('customer', 'orders', ['c_custkey'], ['o_custkey']);
+    return cjt
+

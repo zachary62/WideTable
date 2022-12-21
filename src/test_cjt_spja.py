@@ -3,11 +3,10 @@ import unittest
 
 import duckdb
 
-from src.widetable.cjt import CJT
-from src.widetable.joingraph import JoinGraph
 from widetable.semiring import AvgSemiRing, CountSemiRing, SumSemiRing
 from widetable.aggregator import Annotation
-from test_utils import initialize_synthetic_one_to_many, initialize_synthetic_many_to_many
+from test_utils import initialize_synthetic_one_to_many, initialize_synthetic_many_to_many, \
+    initialize_tpch_for_sample_query, initialize_tpch_small
 
 
 class TestCJT(unittest.TestCase):
@@ -138,31 +137,6 @@ class TestCJT(unittest.TestCase):
         for i in range(len(expected)):
             self.assertTrue(abs(expected[i][0]-actual[i][0])<1e-5)
             self.assertEqual(expected[i][1], actual[i][1])
-
-def initialize_tpch_for_sample_query():
-    duck_db_conn = duckdb.connect(database=':memory:')
-    join_graph = JoinGraph(duck_db_conn)
-    cjt = CJT(semi_ring=SumSemiRing('orders', 'o_totalprice'), join_graph=join_graph)
-    cjt.add_relation('orders', relation_address='../data/tpch_10mb/orders.parquet')
-    cjt.add_relation('customer', relation_address='../data/tpch_10mb/customer.parquet')
-    cjt.add_relation('nation', relation_address='../data/tpch_10mb/nation.parquet')
-    cjt.add_relation('region', relation_address='../data/tpch_10mb/region.parquet')
-
-    cjt.add_join('customer', 'orders', ['c_custkey'], ['o_custkey']);
-    cjt.add_join('region', 'nation', ['r_regionkey'], ['n_regionkey']);
-    cjt.add_join('nation', 'customer', ['n_nationkey'], ['c_nationkey']);
-    return cjt
-
-
-def initialize_tpch_small():
-    duck_db_conn = duckdb.connect(database=':memory:')
-    join_graph = JoinGraph(duck_db_conn)
-    cjt = CJT(semi_ring=SumSemiRing('orders','o_totalprice'), join_graph=join_graph)
-    cjt.add_relation('orders', relation_address='../data/tpch_10mb/orders.parquet')
-    cjt.add_relation('customer', relation_address='../data/tpch_10mb/customer.parquet')
-
-    cjt.add_join('customer', 'orders', ['c_custkey'], ['o_custkey']);
-    return cjt
 
 
 if __name__ == '__main__':
