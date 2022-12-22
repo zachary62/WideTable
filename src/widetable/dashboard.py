@@ -176,8 +176,7 @@ class DashBoard(JoinGraph):
             color: black by default
     These two can be updated in js function through interaction
     '''
-
-    def _repr_html_(self):
+    def get_graph(self):
         nodes = []
         links = []
 
@@ -229,7 +228,10 @@ class DashBoard(JoinGraph):
                           "attributes": list(attributes),
                           "join_keys": list(join_keys),
                           })
-
+        return nodes, links
+        
+    def _repr_html_(self):
+        nodes, links = self.get_graph()
         self.session_id += 1
 
         s = self.rep_template
