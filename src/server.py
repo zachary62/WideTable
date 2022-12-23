@@ -15,7 +15,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def homepage():
-    return render_template('index.html')
+    return render_template('visualization/index.html')
 
 @app.route('/get_graph')
 def get_graph():

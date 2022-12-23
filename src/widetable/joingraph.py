@@ -30,7 +30,7 @@ class JoinGraph:
         self.session_id = int(time.time())
         
         # template for jupyter notebook display
-        self.rep_template = data = pkgutil.get_data(__name__, "static/joingraph.html").decode('utf-8')
+        self.rep_template = data = pkgutil.get_data(__name__, "static_files/joingraph.html").decode('utf-8')
         
     # return a list of relations in the join graph 
     def get_relations(self):

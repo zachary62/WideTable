@@ -60,7 +60,7 @@ class DashBoard(JoinGraph):
         self.cjts = dict()
 
         # template for jupyter notebook display
-        self.rep_template = data = pkgutil.get_data(__name__, "static/dashboard.html").decode('utf-8')
+        self.rep_template = data = pkgutil.get_data(__name__, "static_files/dashboard.html").decode('utf-8')
 
 
     def register_semiring(self, semi_ring: SemiRing, lazy, scope, replace):
