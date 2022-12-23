@@ -2,6 +2,7 @@ export default class SchemaView {
     constructor(element) {
         this.schemaViewElement = element;
     }
+
     addClickHandler(handler) {
         this.clickHandler = handler
     }
@@ -21,7 +22,9 @@ export default class SchemaView {
         this.schemaViewElement.selectAll("span")
             .classed('expanded',false)
     }
+
     highlightRelationAttribute(relation, attribute) {
+        console.log(relation, attribute)
         this.schemaViewElement
             .select("#schema_" + relation)
             .select("#attribute_" + attribute)
@@ -47,8 +50,7 @@ export default class SchemaView {
     }
 
     drawSchema(graph) {
-        // this.clearGraph();
-
+        // add relations
         var schema = this.schemaViewElement
             .selectAll("div")
             .data(graph.nodes)
@@ -58,13 +60,17 @@ export default class SchemaView {
             .attr('id', (d)=>{return 'schema_' + d.name;})
             .on("click", function (d) {
                 d3.select(this)
-                    .selectAll("span")
-                    .classed('expanded', function() {return !d3.select(this).classed("expanded");})
+                  .selectAll("span")
+                  .classed('expanded', function() {
+                      return !d3.select(this).classed("expanded");
+                  })
             });
         schema
             .append("text")
             .attr('class', 'relationName')
             .text((d)=>{return d.id ;})
+        
+        // add measurement attributes
         schema
             .append("div")
             .selectAll("span")
@@ -75,11 +81,14 @@ export default class SchemaView {
             .attr('class', 'attribute measurements')
             .text((d)=>{return d.name;})
             .on("click", (d,i, elems)=> {
+                // this stopPropagation is to prevent the expanding of parent node
                 d3.event.stopPropagation();
                 this.unHighlightSchema()
                 d3.select(elems[i]).classed('highlight',true)
                 this.clickHandler(d)
             });
+        
+        // add join attributes
         schema
             .append("div")
             .selectAll("span")
@@ -92,6 +101,8 @@ export default class SchemaView {
             .on("click", function (d) {
                 d3.event.stopPropagation();
             });
+
+        // add dimension attributes
         schema
             .append("div")
             .selectAll("span")

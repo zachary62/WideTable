@@ -24,8 +24,8 @@ export default class VizualizationController {
     }
     edgeDragEnded = (d)=> {
         this.schemaView.unHighlight()
-        this.schemaView.highlightRelationAttribute(d.source.id, d.sourceAttribute)
-        this.schemaView.highlightRelationAttribute(d.target.id, d.targetAttribute)
+        d.left_keys[0].map(att => this.schemaView.highlightRelationAttribute(d.source.id, att));
+        d.right_keys[0].map(att => this.schemaView.highlightRelationAttribute(d.target.id, att));
         this.schemaView.highlightRelationSchema(d.source.id)
         this.schemaView.highlightRelationSchema(d.target.id)
     }

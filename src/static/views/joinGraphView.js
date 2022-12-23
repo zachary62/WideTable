@@ -32,6 +32,7 @@ export default class JoinGraphView {
         this.nodeDragEndHandler = nodeEndDragHandler;
         this.edgeEndDragHandler = edgeEndDragHandler;
     }
+
     addBackgroundClickHandler(handler) {
         this.backgroundClickHandler = handler;
     }
@@ -43,8 +44,12 @@ export default class JoinGraphView {
 
         this.link
             .classed('highlight',false)
-            .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHead)'; else return '';})
-            .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; else return '';})
+            .attr('marker-end', function(d) { 
+                if (d.multiplicity[1]==='M') return 'url(#arrowHead)'; 
+                else return '';})
+            .attr('marker-start', function(d) { 
+                if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; 
+                else return '';})
             .style('color', null)
 
         this.clickableLinks.classed('highlight',false);
@@ -71,8 +76,12 @@ export default class JoinGraphView {
     highlightRelationEdge(sourceRelation, targetRelation, color=null) {
         d3.select("#edge_" + sourceRelation + "-" + targetRelation)
             .classed('highlight',true)
-            .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHeadHighlight)'; else return '';})
-            .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHeadHighlight)'; else return '';})
+            .attr('marker-end', function(d) { 
+                if (d.multiplicity[1]==='M') return 'url(#arrowHeadHighlight)'; 
+                else return '';})
+            .attr('marker-start', function(d) { 
+                if (d.multiplicity[0]==='M') return 'url(#arrowHeadHighlight)'; 
+                else return '';})
             .style('color', color)
         d3.select("#clickable_edge_" + sourceRelation + "_" + targetRelation)
             .classed('highlight',true)
@@ -92,7 +101,6 @@ export default class JoinGraphView {
 
 
     nodedragended(d, simulation) {
-        console.log(d)
         if (!d3.event.active) simulation.alphaTarget(0);
         d.fx = null;
         d.fy = null;
@@ -176,6 +184,7 @@ export default class JoinGraphView {
             .attr('y2', function(d){return d.target.y;})
             .attr('class', 'clickable_edge')
             .call(edgeDragEvent);
+            
         var linkTexts = linkContainers
         .append('text')
         .attr('x',(d)=>{return d.source.x;})
@@ -300,6 +309,4 @@ export default class JoinGraphView {
             this.backgroundClickHandler()
         })
     }
-
-
 }
