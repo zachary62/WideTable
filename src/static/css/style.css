@@ -1,0 +1,125 @@
+.flex-container {
+    display: flex;
+}
+
+.links line {
+    stroke: #aaa;
+    stroke-width: 2px;
+}
+.links line.highlight{
+    stroke: black;
+    stroke-width: 4px;
+}
+.links line.clickable_edge  {
+    opacity: 0;
+    stroke-width: 20px;
+}
+.links line.clickable_edge.highlight  {
+    opacity: 0;
+    stroke-width: 22px;
+}
+
+.markers polyline {
+    fill: none;
+    stroke: #aaa;
+    stroke-width: 2px;
+}
+
+.markers polyline.highlight {
+    fill: none;
+    stroke: black;
+    stroke-width: 4px;
+}
+
+.nodes circle {
+    fill: #bbb;
+}
+
+.nodes circle.highlight {
+    fill: black;
+}
+
+.relation {
+    background-color: #a7b7e3;
+    margin: 6px 6px;
+    padding: 3px 3px;
+    border-radius: 3px ;
+}
+
+.relation:hover {
+    background-color: #96a4c9;
+}
+
+.relationName {
+    display: flex;
+    margin: 5px 5px;
+    font-weight: bold;
+}
+
+.attribute {
+    display: flex;
+    background-color: white;
+    border-radius: 3px ;
+    margin: 6px 8px;
+    padding: 3px 10px;
+    display: none;
+}
+
+.attribute.expanded {
+    display: block;
+}
+
+.attribute:hover {
+    background-color: #dfdfdf;
+}
+
+
+.attribute.join_keys {
+    background-color: #d9f7da;
+}
+
+.attribute.join_keys:hover {
+    background-color: #b6ddb8;
+}
+
+.attribute.join_keys.highlight {
+    outline: 3px solid #499568;
+}
+
+.attribute.measurements {
+    background-color: #ffd9ea;
+}
+.attribute.measurements.highlight {
+    outline: 3px solid #a16e76;
+}
+
+.attribute.measurements:hover {
+    background-color: #cd97af;
+}
+
+div.scroll {
+    overflow-x: hidden;
+    overflow-y: auto;
+    text-align:justify;
+}
+
+/* custom scrollbar */
+::-webkit-scrollbar {
+    width: 15px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #d6dee1;
+    border-radius: 20px;
+    border: solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #a8bbbf;
+}
+
