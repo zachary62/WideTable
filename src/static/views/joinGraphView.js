@@ -1,10 +1,10 @@
 
 export default class JoinGraphView {
-    constructor(element) {
+    constructor(element, width=600, height=500) {
         this.graphViewElement = element;
 
-        this.width = 600;
-        this.height = 600;
+        this.width = width;
+        this.height = height;
 
         // append the svg object to the body of the page
         this.svg = this.graphViewElement
@@ -39,20 +39,22 @@ export default class JoinGraphView {
 
     unHighlightGraph() {
         this.node
-            .classed('highlight',false)
+            .classed('highlight', false)
             .style('color', null)
 
         this.link
-            .classed('highlight',false)
-            .attr('marker-end', function(d) { 
-                if (d.multiplicity[1]==='M') return 'url(#arrowHead)'; 
-                else return '';})
-            .attr('marker-start', function(d) { 
-                if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; 
-                else return '';})
+            .classed('highlight', false)
+            .attr('marker-end', function (d) {
+                if (d.multiplicity[1] === 'M') return 'url(#arrowHead)';
+                else return '';
+            })
+            .attr('marker-start', function (d) {
+                if (d.multiplicity[0] === 'M') return 'url(#arrowHead)';
+                else return '';
+            })
             .style('color', null)
 
-        this.clickableLinks.classed('highlight',false);
+        this.clickableLinks.classed('highlight', false);
 
         this.nodeAboveText
             .text("")
@@ -63,28 +65,30 @@ export default class JoinGraphView {
         this.unHighlightGraph();
     }
 
-    highlightRelationNode(relation, color=null, text="") {
+    highlightRelationNode(relation, color = null, text = "") {
         // highlight node
         d3.select("#circle_" + relation)
-            .classed('highlight',true)
+            .classed('highlight', true)
             .style('color', color)
 
         d3.select("#circleText_" + relation)
             .text(text)
     }
 
-    highlightRelationEdge(sourceRelation, targetRelation, color=null) {
+    highlightRelationEdge(sourceRelation, targetRelation, color = null) {
         d3.select("#edge_" + sourceRelation + "-" + targetRelation)
-            .classed('highlight',true)
-            .attr('marker-end', function(d) { 
-                if (d.multiplicity[1]==='M') return 'url(#arrowHeadHighlight)'; 
-                else return '';})
-            .attr('marker-start', function(d) { 
-                if (d.multiplicity[0]==='M') return 'url(#arrowHeadHighlight)'; 
-                else return '';})
+            .classed('highlight', true)
+            .attr('marker-end', function (d) {
+                if (d.multiplicity[1] === 'M') return 'url(#arrowHeadHighlight)';
+                else return '';
+            })
+            .attr('marker-start', function (d) {
+                if (d.multiplicity[0] === 'M') return 'url(#arrowHeadHighlight)';
+                else return '';
+            })
             .style('color', color)
         d3.select("#clickable_edge_" + sourceRelation + "_" + targetRelation)
-            .classed('highlight',true)
+            .classed('highlight', true)
     }
 
     dragstarted(d, simulation) {
@@ -119,20 +123,20 @@ export default class JoinGraphView {
         var defs = this.svg.append('defs')
 
         defs.append('marker')
-            .attr('id','arrowHead').attr('markerWidth','30').attr('markerHeight','30')
-            .attr('refX', this.circleRadius + this.triangleHeight-3).attr('refY',this.triangleBase/2 + this.verticalOffset)
+            .attr('id', 'arrowHead').attr('markerWidth', '30').attr('markerHeight', '30')
+            .attr('refX', this.circleRadius + this.triangleHeight - 3).attr('refY', this.triangleBase / 2 + this.verticalOffset)
             .attr('orient', 'auto-start-reverse')
-            .attr('class','markers')
+            .attr('class', 'markers')
             .attr('markerUnits', 'userSpaceOnUse')
             .append('polyline')
             // triangle ArrowHead
             .attr('transform', `translate(0,${this.verticalOffset})`)
-            .attr('points',`0 ${this.triangleBase/2}, ${this.triangleHeight +this.edgeLengthModifier} 0, 0 ${this.triangleBase/2}, ${this.triangleHeight +this.edgeLengthModifier} ${this.triangleBase}`)
+            .attr('points', `0 ${this.triangleBase / 2}, ${this.triangleHeight + this.edgeLengthModifier} 0, 0 ${this.triangleBase / 2}, ${this.triangleHeight + this.edgeLengthModifier} ${this.triangleBase}`)
         // .attr('points',`0 0, ${triangleHeight} ${triangleBase/2}, 0 ${triangleBase}`)
 
         defs.append('marker')
-            .attr('id','arrowHeadHighlight').attr('markerWidth','100px').attr('markerHeight','100px')
-            .attr('refX', this.circleRadius + this.triangleHeight-3).attr('refY',this.triangleBase/2 + this.verticalOffset)
+            .attr('id', 'arrowHeadHighlight').attr('markerWidth', '100px').attr('markerHeight', '100px')
+            .attr('refX', this.circleRadius + this.triangleHeight - 3).attr('refY', this.triangleBase / 2 + this.verticalOffset)
             .attr('orient', 'auto-start-reverse').attr('class', 'markers highlight')
             .attr('markerUnits', 'userSpaceOnUse')
             .attr('transform', `translate(0,${this.verticalOffset})`)
@@ -140,10 +144,10 @@ export default class JoinGraphView {
             .attr('class', 'markers highlight')
             // triangle ArrowHead
             .attr('transform', `translate(0,${this.verticalOffset})`)
-            .attr('points',`0 ${this.triangleBase/2}, ${this.triangleHeight +this.edgeLengthModifier} 0, 0 ${this.triangleBase/2}, ${this.triangleHeight +this.edgeLengthModifier} ${this.triangleBase}`)
+            .attr('points', `0 ${this.triangleBase / 2}, ${this.triangleHeight + this.edgeLengthModifier} 0, 0 ${this.triangleBase / 2}, ${this.triangleHeight + this.edgeLengthModifier} ${this.triangleBase}`)
 
         this.simulation = d3.forceSimulation()
-            .force("link", d3.forceLink().id((d)=>{return d.id;}))
+            .force("link", d3.forceLink().id((d) => { return d.id; }))
             .force("charge", d3.forceManyBody().strength(-280))
             .force("center", d3.forceCenter(this.width / 2, this.height / 2));
 
@@ -157,9 +161,9 @@ export default class JoinGraphView {
             .append("g");
 
         var edgeDragEvent = d3.drag()
-            .on("start", (d,i, nodes) => {this.dragstarted(d, this.simulation)})
-            .on("drag", (d,i, nodes) => {this.dragged(d, this.simulation)})
-            .on("end", (d,i,nodes) => {
+            .on("start", (d, i, nodes) => { this.dragstarted(d, this.simulation) })
+            .on("drag", (d, i, nodes) => { this.dragged(d, this.simulation) })
+            .on("end", (d, i, nodes) => {
                 // console.log(d.source.id)
                 this.unHighlight();
                 this.edgedragended(d, this.simulation);
@@ -170,27 +174,27 @@ export default class JoinGraphView {
 
         this.link = linkContainers
             .append("line")
-            .attr('id', (d)=>{return "edge_" + d.source + "-" + d.target;})
-            .attr('marker-end', function(d) { if (d.multiplicity[1]==='M') return 'url(#arrowHead)'; else return '';})
-            .attr('marker-start', function(d) { if (d.multiplicity[0]==='M') return 'url(#arrowHead)'; else return '';})
+            .attr('id', (d) => { return "edge_" + d.source + "-" + d.target; })
+            .attr('marker-end', function (d) { if (d.multiplicity[1] === 'M') return 'url(#arrowHead)'; else return ''; })
+            .attr('marker-start', function (d) { if (d.multiplicity[0] === 'M') return 'url(#arrowHead)'; else return ''; })
             .call(edgeDragEvent);
-        
+
         this.clickableLinks = linkContainers
             .append('line')
-            .attr('id', (d) => {return 'clickable_edge_' + d.source + '_' + d.target})
-            .attr('x1', function(d){return d.source.x;})
-            .attr('y1', function(d){return d.source.y;})
-            .attr('x2', function(d){return d.target.x;})
-            .attr('y2', function(d){return d.target.y;})
+            .attr('id', (d) => { return 'clickable_edge_' + d.source + '_' + d.target })
+            .attr('x1', function (d) { return d.source.x; })
+            .attr('y1', function (d) { return d.source.y; })
+            .attr('x2', function (d) { return d.target.x; })
+            .attr('y2', function (d) { return d.target.y; })
             .attr('class', 'clickable_edge')
             .call(edgeDragEvent);
-            
+
         var linkTexts = linkContainers
-        .append('text')
-        .attr('x',(d)=>{return d.source.x;})
-        .attr('y',(d)=>{return d.source.y;})
-        .text((d, i)=>{return 'txt';})
-        .call(edgeDragEvent)
+            .append('text')
+            .attr('x', (d) => { return d.source.x; })
+            .attr('y', (d) => { return d.source.y; })
+            .text((d, i) => { return 'txt'; })
+            .call(edgeDragEvent)
 
 
         //list of node containers
@@ -201,11 +205,11 @@ export default class JoinGraphView {
             .enter()
             .append("g")
             .attr("class", "nodes")
-            .attr('id', (d)=>{return 'node_container_' + d.id});
+            .attr('id', (d) => { return 'node_container_' + d.id });
 
         var nodeDragEvent = d3.drag()
-            .on("start", (d,i, nodes) => {this.dragstarted(d, this.simulation)})
-            .on("drag", (d,i, nodes) => {this.dragged(d, this.simulation)})
+            .on("start", (d, i, nodes) => { this.dragstarted(d, this.simulation) })
+            .on("drag", (d, i, nodes) => { this.dragged(d, this.simulation) })
             .on("end", (d, i, nodes) => {
                 this.unHighlight();
                 this.nodedragended(d, this.simulation);
@@ -213,86 +217,90 @@ export default class JoinGraphView {
             })
 
         this.node = dataEnter.append("circle")
-            .attr('id', (d)=>{return "circle_" + d.id;})
+            .attr('id', (d) => { return "circle_" + d.id; })
             .attr("r", this.circleRadius)
             .call(nodeDragEvent);
 
         var nodeText = dataEnter.append("text")
             .attr("dy", "1em")
             .attr('fill', 'white')
-            .text((d)=>{return d.name;})
+            .text((d) => { return d.name; })
             .call(nodeDragEvent);
 
         this.nodeAboveText = dataEnter.append("text")
-            .attr('id', (d)=>{return "circleText_" + d.id;})
+            .attr('id', (d) => { return "circleText_" + d.id; })
             .attr("dy", -this.circleRadius)
             .attr('fill', 'black')
             .call(nodeDragEvent)
 
 
-        this.nodeAboveText.style('font-family','cursive');
+        this.nodeAboveText.style('font-family', 'cursive');
 
         function ticked() {
             let radius = this.circleRadius
             let w = this.width
             let h = this.height
             // make sure that all the links are within boundary
-            this.link.attr("x1", (d)=>{
-                let nodeX = Math.max(this.circleRadius, Math.min(this.width-this.circleRadius, d.source.x))
+            this.link.attr("x1", (d) => {
+                let nodeX = Math.max(this.circleRadius, Math.min(this.width - this.circleRadius, d.source.x))
                 return Math.max(0, Math.min(this.width, nodeX));
             })
-                .attr("y1", (d)=>{
-                    let nodeY = Math.max(this.circleRadius, Math.min(this.height-this.circleRadius, d.source.y))
+                .attr("y1", (d) => {
+                    let nodeY = Math.max(this.circleRadius, Math.min(this.height - this.circleRadius, d.source.y))
                     // console.log(this.circleRadius)
                     return Math.max(0, Math.min(this.height, nodeY));
                 })
-                .attr("x2", (d)=>{
-                    let nodeX = Math.max(this.circleRadius, Math.min(this.width-this.circleRadius, d.target.x))
+                .attr("x2", (d) => {
+                    let nodeX = Math.max(this.circleRadius, Math.min(this.width - this.circleRadius, d.target.x))
                     return Math.max(0, Math.min(this.width, nodeX));
                 })
-                .attr("y2", (d)=>{
-                    let nodeY = Math.max(this.circleRadius, Math.min(this.height-this.circleRadius, d.target.y))
+                .attr("y2", (d) => {
+                    let nodeY = Math.max(this.circleRadius, Math.min(this.height - this.circleRadius, d.target.y))
                     return Math.max(0, Math.min(this.height, nodeY));
                 });
 
-            this.clickableLinks.attr("x1", (d)=>{
-                let nodeX = Math.max(this.circleRadius, Math.min(this.width-this.circleRadius, d.source.x))
+            this.clickableLinks.attr("x1", (d) => {
+                let nodeX = Math.max(this.circleRadius, Math.min(this.width - this.circleRadius, d.source.x))
                 return Math.max(0, Math.min(this.width, nodeX));
             })
-                .attr("y1", (d)=>{
-                    let nodeY = Math.max(this.circleRadius, Math.min(this.height-this.circleRadius, d.source.y))
+                .attr("y1", (d) => {
+                    let nodeY = Math.max(this.circleRadius, Math.min(this.height - this.circleRadius, d.source.y))
                     return Math.max(0, Math.min(this.height, nodeY));
                 })
-                .attr('x2', (d)=>{
-                    let nodeX = Math.max(this.circleRadius, Math.min(this.width-this.circleRadius, d.target.x))
+                .attr('x2', (d) => {
+                    let nodeX = Math.max(this.circleRadius, Math.min(this.width - this.circleRadius, d.target.x))
                     return Math.max(0, Math.min(this.width, nodeX));
                 })
-                .attr('y2', (d)=>{
-                    let nodeY = Math.max(this.circleRadius, Math.min(this.height-this.circleRadius, d.target.y))
+                .attr('y2', (d) => {
+                    let nodeY = Math.max(this.circleRadius, Math.min(this.height - this.circleRadius, d.target.y))
                     return Math.max(0, Math.min(this.height, nodeY));
                 });
 
             // // for the texts on the link
             linkTexts
-                .attr('x', function(d) {
-                    return Math.max(0, Math.min(w,d.source.x + (d.target.x - d.source.x) / 2 - this.getBBox().width/2))
+                .attr('x', function (d) {
+                    return Math.max(0, Math.min(w, d.source.x + (d.target.x - d.source.x) / 2 - this.getBBox().width / 2))
                 })
-                .attr('y', (d)=>{return Math.max(0, Math.min(this.height, d.source.y + (d.target.y - d.source.y)/2))});
+                .attr('y', (d) => { return Math.max(0, Math.min(this.height, d.source.y + (d.target.y - d.source.y) / 2)) });
 
             this.node
-                .attr("transform", (d)=>{return "translate(" + Math.max(this.circleRadius, Math.min(this.width-this.circleRadius, d.x)) +
-                    ", " + Math.max(this.circleRadius, Math.min(this.height-this.circleRadius, d.y)) + ")";});
+                .attr("transform", (d) => {
+                    return "translate(" + Math.max(this.circleRadius, Math.min(this.width - this.circleRadius, d.x)) +
+                        ", " + Math.max(this.circleRadius, Math.min(this.height - this.circleRadius, d.y)) + ")";
+                });
             this.nodeAboveText
-                .attr("x", function (d) {return Math.max(radius/2, Math.min(w-radius/2, d.x - this.getBBox().width / 2))})
-                .attr("y", function (d) {return Math.max(radius/2, Math.min(h-radius/2, d.y - this.getBBox().height / 2 ))});
+                .attr("x", function (d) { return Math.max(radius / 2, Math.min(w - radius / 2, d.x - this.getBBox().width / 2)) })
+                .attr("y", function (d) { return Math.max(radius / 2, Math.min(h - radius / 2, d.y - this.getBBox().height / 2)) });
 
             nodeText
                 .attr("x", function (d) {
-                    let nodeX = Math.max(radius, Math.min(w-radius, d.x))
-                    return Math.max(0, Math.min(w, nodeX - this.getBBox().width / 2))})
+                    let nodeX = Math.max(radius, Math.min(w - radius, d.x))
+                    return Math.max(0, Math.min(w, nodeX - this.getBBox().width / 2))
+                })
                 .attr("y", function (d) {
-                    let nodeY = Math.max(radius, Math.min(h-radius, d.y))
-                    return Math.max(0, Math.min(h, nodeY - this.getBBox().height / 2 ))});
+                    let nodeY = Math.max(radius, Math.min(h - radius, d.y))
+                    return Math.max(0, Math.min(h, nodeY - this.getBBox().height / 2))
+                });
 
 
         }
@@ -305,7 +313,7 @@ export default class JoinGraphView {
             .distance(this.linkDistance);
 
 
-        this.svg.on("mousedown", (d, i, nodes)=> {
+        this.svg.on("mousedown", (d, i, nodes) => {
             this.backgroundClickHandler()
         })
     }

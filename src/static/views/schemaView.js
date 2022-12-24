@@ -14,13 +14,13 @@ export default class SchemaView {
 
     unHighlightSchema() {
         this.schemaViewElement.selectAll("span")
-            .classed('highlight',false)
+            .classed('highlight', false)
 
     }
 
     unExpandSchema() {
         this.schemaViewElement.selectAll("span")
-            .classed('expanded',false)
+            .classed('expanded', false)
     }
 
     highlightRelationAttribute(relation, attribute) {
@@ -28,7 +28,7 @@ export default class SchemaView {
         this.schemaViewElement
             .select("#schema_" + relation)
             .select("#attribute_" + attribute)
-            .classed('highlight',true)
+            .classed('highlight', true)
     }
 
     highlightRelationSchema(relation) {
@@ -37,7 +37,7 @@ export default class SchemaView {
         schema
             .selectAll('div')
             .selectAll('span')
-            .classed('expanded',true)
+            .classed('expanded', true)
 
         // flash schema
         schema
@@ -57,47 +57,47 @@ export default class SchemaView {
             .enter()
             .append("div")
             .attr('class', 'relation')
-            .attr('id', (d)=>{return 'schema_' + d.name;})
+            .attr('id', (d) => { return 'schema_' + d.name; })
             .on("click", function (d) {
                 d3.select(this)
-                  .selectAll("span")
-                  .classed('expanded', function() {
-                      return !d3.select(this).classed("expanded");
-                  })
+                    .selectAll("span")
+                    .classed('expanded', function () {
+                        return !d3.select(this).classed("expanded");
+                    })
             });
         schema
             .append("text")
             .attr('class', 'relationName')
-            .text((d)=>{return d.id ;})
-        
+            .text((d) => { return d.id; })
+
         // add measurement attributes
         schema
             .append("div")
             .selectAll("span")
-            .data((d)=>{return d.measurements;})
+            .data((d) => { return d.measurements; })
             .enter()
             .append("span")
-            .attr('id', (d)=>{return 'attribute_' + d.name;})
+            .attr('id', (d) => { return 'attribute_' + d.name; })
             .attr('class', 'attribute measurements')
-            .text((d)=>{return d.name;})
-            .on("click", (d,i, elems)=> {
+            .text((d) => { return d.name; })
+            .on("click", (d, i, elems) => {
                 // this stopPropagation is to prevent the expanding of parent node
                 d3.event.stopPropagation();
                 this.unHighlightSchema()
-                d3.select(elems[i]).classed('highlight',true)
+                d3.select(elems[i]).classed('highlight', true)
                 this.clickHandler(d)
             });
-        
+
         // add join attributes
         schema
             .append("div")
             .selectAll("span")
-            .data((d)=>{return d.join_keys;})
+            .data((d) => { return d.join_keys; })
             .enter()
             .append("span")
-            .attr('id', (d)=>{return 'attribute_' + d;})
+            .attr('id', (d) => { return 'attribute_' + d; })
             .attr('class', 'attribute join_keys')
-            .text((d)=>{return d;})
+            .text((d) => { return d; })
             .on("click", function (d) {
                 d3.event.stopPropagation();
             });
@@ -106,17 +106,17 @@ export default class SchemaView {
         schema
             .append("div")
             .selectAll("span")
-            .data((d)=>{return d.attributes;})
+            .data((d) => { return d.attributes; })
             .enter()
             .append("span")
-            .attr('id', (d)=>{return 'attribute_' + d;})
+            .attr('id', (d) => { return 'attribute_' + d; })
             .attr('class', 'attribute')
-            .text((d)=>{return d;})
+            .text((d) => { return d; })
             .on("click", function (d) {
                 d3.event.stopPropagation();
             });
 
-        this.schemaViewElement.on("mousedown", (d, i, nodes)=> {
+        this.schemaViewElement.on("mousedown", (d, i, nodes) => {
             this.unHighlightSchema();
         })
     }

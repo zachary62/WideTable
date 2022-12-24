@@ -3,12 +3,15 @@
 <head>
     <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}">
 </head>
-<div class="flex-container" style="font-family:sans-serif;font-size:12px;">
-</div>
 <script src="https://d3js.org/d3.v5.min.js"></script>
-<div class="flex-container" style="font-family:sans-serif;font-size:12px; "id="app">
-    <div id="schemaView" style="background-color:#38425D;width:220px;height:100vh;overflow-y:scroll;"></div>
-    <div id="graphView"></div>
+<div class="flex-container sansfront" id="app">
+    <div id="schemaView" class="schemaView" ></div>
+    <div class="vertical-blocks">
+        <div id="graphView" class="graphView"></div>
+        <div id="visView"></div>
+      </div>
+      <!-- Tooltip container -->
+  <div class="tooltip sansfront"></div>
+   
 </div>
-<div id="tableManager"></div>
 <script type="module" src="{{url_for('static', filename='main.js')}}"></script>
