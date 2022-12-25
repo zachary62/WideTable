@@ -1,5 +1,5 @@
 export default class VisView {
-    constructor(element, width = 1000, height = 600) {
+    constructor(element, width = 1500, height = 600) {
         this.tableViewElement = element;
 
         this.width = width;
@@ -42,16 +42,17 @@ export default class VisView {
         visDiv = visDiv.append("table")
         // Create a schema row and append it to the table
         let nameRow = visDiv.append("tr")
-            .attr("height", this.defaultCellHeight);
+            // .attr("height", this.defaultCellHeight);
 
         // Add a row for table name
         nameRow.append("th")
             .text(tablename)
             .attr("colspan", data[0].length + links.length)
             .classed("tablename", true)
+            .classed("single", true)
 
         let attributeRow = visDiv.append("tr")
-            .attr("height", this.defaultCellHeight);
+            // .attr("height", this.defaultCellHeight);
 
         // Add a cell for each item in the schema list
         attributeRow.selectAll("th.schema")
@@ -59,7 +60,8 @@ export default class VisView {
             .enter()
             .append("th")
             .text((d) => d)
-            .classed("dschemaata", true);
+            .classed("dschemaata", true)
+            .classed("single", true)
 
         // Append a row for each element in the data array
         var rows = visDiv.selectAll("tr.data")
@@ -74,6 +76,8 @@ export default class VisView {
             .data(function (d) { return d; })
             .enter()
             .append("td")
+            .classed("single", true)
+            .classed("single", true)
 
         cells.text(function (d) { return d; });
 
@@ -122,7 +126,14 @@ export default class VisView {
             .classed("link", true)
             .append("button")
             .text("explore")
-            .on("click", exploreHandler);
-
+            // .on("click", exploreHandler);
+            // .on("click", (d)=>exploreHandler(d, this));
+            .on("click", function(d) {
+                // Select the parent td element of the button
+                const cell = d3.select(this.parentNode);
+                
+                cell.select("button").remove()
+                exploreHandler(d, cell)
+              })
     }
 }

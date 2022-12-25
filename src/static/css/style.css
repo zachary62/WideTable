@@ -164,12 +164,17 @@ td {
     /* Add a border to the cells */
     /* padding: 8px; */
     /* Add padding to the cells */
+    
+    text-align: center; 
+    vertical-align: middle;
+}
+
+th,
+td.single {
     max-width: 100px;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
-    text-align: center; 
-    vertical-align: middle;
 }
 
 th {

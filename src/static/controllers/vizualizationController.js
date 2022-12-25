@@ -62,29 +62,55 @@ export default class VizualizationController {
         this.schemaView.highlightRelationSchema(d.target.id)
     }
 
-    exploreHandler = async (d) => {
+    // exploreHandler = async (d) => {
+    //     let data = d["d"]
+    //     let schema = d["schema"]
+    //     let tablename =  d["tablename"]
+    //     console.log(d, data, schema, tablename)
+
+    //     let cur_join_keys = tablename === d.source.id ? d.left_keys[0]: d.left_keys[1]
+    //     let next_join_keys = tablename === d.source.id ? d.left_keys[1]: d.left_keys[0]
+    //     let next_tablename = tablename === d.source.id ? d.target.name: d.source.name
+    //     let cur_selection_conds = cur_join_keys.map(key => key + " = " + data[schema.indexOf(key)])
+    //     let next_selection_conds = next_join_keys.map((key, idx) => key + " = " + data[schema.indexOf(cur_join_keys[idx])])
+
+    //     this.visView.clear()
+    //     let visDiv = this.visView.addVisDiv()
+
+    //     let data1 = await this.getData(tablename, cur_selection_conds)
+    //     let data2 = await this.getData(next_tablename, next_selection_conds)
+
+    //     let links1 = this.getEdges(tablename)
+    //     let links2 = this.getEdges(next_tablename)
+        
+    //     this.visView.drawSingleTable(tablename, data1["header"], data1["data"], links1, null, visDiv, this.exploreHandler)
+    //     this.visView.drawSingleTable(next_tablename, data2["header"], data2["data"], links2, null, visDiv, this.exploreHandler)
+
+    // }
+
+    exploreHandler = async (d, element) => {
         let data = d["d"]
         let schema = d["schema"]
         let tablename =  d["tablename"]
-        console.log(d, data, schema, tablename)
 
+        console.log(element)
         let cur_join_keys = tablename === d.source.id ? d.left_keys[0]: d.left_keys[1]
         let next_join_keys = tablename === d.source.id ? d.left_keys[1]: d.left_keys[0]
         let next_tablename = tablename === d.source.id ? d.target.name: d.source.name
         let cur_selection_conds = cur_join_keys.map(key => key + " = " + data[schema.indexOf(key)])
         let next_selection_conds = next_join_keys.map((key, idx) => key + " = " + data[schema.indexOf(cur_join_keys[idx])])
 
-        this.visView.clear()
-        let visDiv = this.visView.addVisDiv()
+        // this.visView.clear()
+        // let visDiv = this.visView.addVisDiv()
 
-        let data1 = await this.getData(tablename, cur_selection_conds)
+        // let data1 = await this.getData(tablename, cur_selection_conds)
         let data2 = await this.getData(next_tablename, next_selection_conds)
 
         let links1 = this.getEdges(tablename)
         let links2 = this.getEdges(next_tablename)
         
-        this.visView.drawSingleTable(tablename, data1["header"], data1["data"], links1, null, visDiv, this.exploreHandler)
-        this.visView.drawSingleTable(next_tablename, data2["header"], data2["data"], links2, null, visDiv, this.exploreHandler)
+        // this.visView.drawSingleTable(tablename, data1["header"], data1["data"], links1, null, visDiv, this.exploreHandler)
+        this.visView.drawSingleTable(next_tablename, data2["header"], data2["data"], links2, null, element, this.exploreHandler)
 
     }
 
