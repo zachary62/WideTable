@@ -39,10 +39,14 @@ def homepage():
 
 @app.route('/get_relation_sample', methods=['POST'])
 def get_relation_sample():
+    print(request)
     # Get the string from the request data
-    relation = request.data.decode('utf-8')
+    data = request.get_json()
+    
+    relation = data["relation"]
+    selection_conds = data["selection_conds"]
     # Return the sample data
-    return jsonify(dashboard.get_relation_sample(relation))
+    return jsonify(dashboard.get_relation_sample(relation, selection_conds))
 
 @app.route('/get_graph')
 def get_graph():
