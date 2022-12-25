@@ -1,6 +1,6 @@
 
 export default class JoinGraphView {
-    constructor(element, width=600, height=500) {
+    constructor(element, width=800, height=300) {
         this.graphViewElement = element;
 
         this.width = width;

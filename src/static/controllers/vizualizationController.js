@@ -8,7 +8,13 @@ export default class VizualizationController {
         this.jGView.addBackgroundClickHandler(this.backgroundClickHandler);
         this.jGView.drawGraph(graph);
         this.schemaView.addClickHandler(this.schemaClickHandler);
-        this.schemaView.drawSchema(graph);   
+        this.schemaView.drawSchema(graph);  
+        this.graph = graph 
+    }
+
+    getEdges(relationId) {
+        let links = this.graph["links"]
+        return links.filter(link => link.source.id === relationId || link.target.id === relationId)
     }
 
     // write handler functions for edge drag and node drag of joinGraphView
@@ -33,7 +39,8 @@ export default class VizualizationController {
             body: tablename
         }).then(response => response.json())
           .then(data => {return data });
-          this.visView.drawTable(data["header"], data["data"])
+        let links = this.getEdges(d["id"])
+        this.visView.drawSingleTable(tablename, data["header"], data["data"], links)
     }
     edgeDragEnded = (d) => {
         this.schemaView.unHighlight()
