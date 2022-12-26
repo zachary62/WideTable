@@ -41,7 +41,7 @@ class Executor(ABC):
 
 
 class DuckdbExecutor(Executor):
-    def __init__(self, conn, debug=False):
+    def __init__(self, conn, debug=True):
         super().__init__()
         self.conn = conn
         self.debug = debug

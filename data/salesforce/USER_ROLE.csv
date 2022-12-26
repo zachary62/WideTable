@@ -1,0 +1,4 @@
+Id,Name,Parent Role Id,Rollup Description,Opportunity Access for Account Owner,Case Access for Account Owner,Contact Access for Account Owner,Forecast User Id,May Forecast Manager Share,Last Modified Date,Last Modified by Id,System Modstamp,Portal Account Id,Portal Type,Portal Role,Portal Account Owner Id
+2,Central,Americas,,,,,,,,,,,,,
+3,East,Americas,,,,,,,,,,,,,
+1,West,Americas,,,,,,,,,,,,,

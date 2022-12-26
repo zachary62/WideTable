@@ -131,6 +131,11 @@ dmypy.json
 # experiment codes
 /src/*.ipynb
 /tests/*.ipynb
+/data/*.ipynb
 /note
+
+/data/salesforce/OPPORTUNITYL.csv
+/data/salesforce/CAMPAIGNL.csv
+
 
 .idea

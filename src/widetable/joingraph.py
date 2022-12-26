@@ -34,6 +34,8 @@ class JoinGraph:
         # template for jupyter notebook display
         self.rep_template = data = pkgutil.get_data(
             __name__, "static_files/joingraph.html").decode('utf-8')
+    def copy(self):
+        return JoinGraph(self.exe, self.joins, self.relation_info)
 
     # return a list of relations in the join graph
     def get_relations(self):
@@ -107,8 +109,10 @@ class JoinGraph:
                      relation: str,
                      attrs: list = None,
                      relation_address=None):
-
-        self.exe.add_table(relation, relation_address)
+        
+        if relation_address is not None:
+            self.exe.add_table(relation, relation_address)
+            
         self.joins[relation] = dict()
 
         if relation not in self.relation_info:
@@ -120,7 +124,7 @@ class JoinGraph:
             attrs = self.exe.get_schema(relation)
 
         for x in attrs:
-            self.relation_info[relation]["schema"][x] = ""
+            self.relation_info[relation]["schema"][f'"{x}"'] = ""
 
     # get the join keys between two tables
     # or if t_table is None, get all the join keys of one table
@@ -163,8 +167,8 @@ class JoinGraph:
         if relation_right not in self.relation_info:
             raise JoinGraphException(relation_right + ' doesn\'t exit!')
 
-        left_keys = [attr for attr in left_keys]
-        right_keys = [attr for attr in right_keys]
+        left_keys = [f'"{attr}"' for attr in left_keys]
+        right_keys = [f'"{attr}"' for attr in right_keys]
 
         self.joins[relation_left][relation_right] = {"keys": (left_keys, right_keys),
                                                      "message_type": Message.UNDECIDED, }

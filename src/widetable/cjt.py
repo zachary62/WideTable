@@ -8,7 +8,7 @@ class CJT(JoinGraph):
     def __init__(self,
                  semi_ring: SemiRing,
                  join_graph: JoinGraph,
-                 verbose=False):
+                 verbose=True):
 
         self.message_id = 0
         self.semi_ring = semi_ring
@@ -53,6 +53,11 @@ class CJT(JoinGraph):
             self.relation_info[relation]["annotation"].append(annotation)
         # invalidate messages from this relation
         self.downward_message_passing(relation, Message.UNDECIDED)
+        
+    def invalidate_all(self):
+        relation = self.get_relations()[0]
+        self.downward_message_passing(relation, Message.UNDECIDED)
+        self.upward_message_passing(relation, Message.UNDECIDED)
 
     def remove_annotations(self, relation: str, annotation, lazy=True):
         pass
@@ -70,7 +75,6 @@ class CJT(JoinGraph):
         pass
 
     def invalidate_message(self, from_table, to_table):
-
         message_name = self.get_message(from_table, to_table)
         self.delete_message(from_table, to_table)
 
@@ -104,8 +108,9 @@ class CJT(JoinGraph):
 
     # this is for "what-if query"
     # copy a new cjt so the old are kept
-    def copy_cjt(self, semi_ring: SemiRing):
-        pass
+    def copy(self):
+        join_graph = super().copy()
+        return CJT(self.semi_ring, join_graph, self.verbose)
 
     def calibration(self, root_table=None):
         # TODO: choose the first relation in the joins
@@ -156,6 +161,9 @@ class CJT(JoinGraph):
                 self._pre_dfs(c_neighbor, current_table, m_type=m_type)
 
     def absorption(self, user_table: str, group_by=[], order_by=[], mode=4):
+        if self.get_relation_from_user_table(user_table) is None:
+            raise Exception(f'Table {user_table} is not founded')
+        
         relation = self.get_relation_from_user_table(user_table)
         incoming_messages, join_conds = self._get_income_messages(relation)
 

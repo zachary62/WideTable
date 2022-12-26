@@ -87,7 +87,7 @@ class DashBoard(JoinGraph):
         else:
             self.measurement[semi_ring.get_user_table()].append(semi_ring)
 
-    def register_measurement(self, name, relation, attr, lazy=False, scope=FullJoin(), replace=False):
+    def register_measurement(self, name, relation, attr=None, lazy=False, scope=FullJoin(), replace=False):
         measurement = SemiRingFactory(name, relation, attr)
         scope.preprocess(self)
         self.register_semiring(measurement, lazy, scope, replace)
@@ -111,8 +111,7 @@ class DashBoard(JoinGraph):
 
     # TODO: current group-by is only on the root table
     def absorption(self, measurement, group_by=[], order_by = [], mode=4, user_table=None):
-#         parsed_group_by = self.parse_attributes(group_by)
-
+        # parsed_group_by = self.parse_attributes(group_by) 
         sem_ring_str = measurement.__str__()
         cjt = self.cjts[sem_ring_str]
 
@@ -128,6 +127,18 @@ class DashBoard(JoinGraph):
         sem_ring_str = measurement.__str__()
         scope = self.cjts[sem_ring_str].scope
         return scope.highlightRelation(relation)
+    
+    def get_cjt(self, measurement):
+        return self.cjts[measurement.__str__()]
+    
+    def calibration(self, measurement):
+        self.get_cjt(measurement).calibration()
+        
+    def add_annotations(self, measurement, user_table: str, annotation):
+        self.get_cjt(measurement).add_annotations(user_table, annotation)
+        
+    def add_groupbys(self, measurement, user_table, attributes, lazy=True):
+        self.get_cjt(measurement).add_groupbys(user_table, attributes, lazy)
 
     def highlightEdge(self, measurement, from_table, to_tabl):
         # find the scope of this measurement
