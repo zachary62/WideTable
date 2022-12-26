@@ -72,7 +72,7 @@ class TestCJT(unittest.TestCase):
         ).fetchall()
         cjt.lift_all()
         cjt.calibration()
-        cjt.add_groupbys('S', 'E')
+        cjt.add_groupbys('S', ['E'])
         cjt.calibration()
         # redundant calibration should not break 
         cjt.calibration()
@@ -90,7 +90,7 @@ class TestCJT(unittest.TestCase):
         ).fetchall()
         cjt.lift_all()
         cjt.calibration()
-        cjt.add_groupbys('S', 'E')
+        cjt.add_groupbys('S', ['E'])
         # upward message passing is using internal table name 
         # because it is supposed to be an internal function
         cjt.upward_message_passing(cjt.get_relation_from_user_table('T'))
@@ -109,7 +109,7 @@ class TestCJT(unittest.TestCase):
         ORDER BY c.c_name
         """).fetchall()
         cjt.lift_all()
-        cjt.add_groupbys('customer', 'c_name')
+        cjt.add_groupbys('customer', ['c_name'])
         cjt.add_annotations('customer', ['c_name', Annotation.NOT_DISTINCT, 'Customer#000000001'])
         cjt.upward_message_passing(cjt.get_relation_from_user_table('customer'))
         actual = cjt.absorption('customer', ['c_name'], ['c_name'], mode=3)
@@ -130,7 +130,7 @@ class TestCJT(unittest.TestCase):
             ORDER BY n_name
             """).fetchall()
         cjt.lift_all()
-        cjt.add_groupbys('nation', 'n_name')
+        cjt.add_groupbys('nation', ['n_name'])
         cjt.add_annotations('region', ['r_name', Annotation.NOT_DISTINCT, 'ASIA'])
         cjt.upward_message_passing(cjt.get_relation_from_user_table('nation'))
         actual = cjt.absorption('nation', ['n_name'], ['n_name'], mode=3)

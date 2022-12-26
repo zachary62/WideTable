@@ -124,7 +124,10 @@ class JoinGraph:
             attrs = self.exe.get_schema(relation)
 
         for x in attrs:
-            self.relation_info[relation]["schema"][f'"{x}"'] = ""
+            # TODO: join key can't have space! check the bug
+            if ' ' in x:
+                x = f'"{x}"'
+            self.relation_info[relation]["schema"][x] = ""
 
     # get the join keys between two tables
     # or if t_table is None, get all the join keys of one table
@@ -167,8 +170,8 @@ class JoinGraph:
         if relation_right not in self.relation_info:
             raise JoinGraphException(relation_right + ' doesn\'t exit!')
 
-        left_keys = [f'"{attr}"' for attr in left_keys]
-        right_keys = [f'"{attr}"' for attr in right_keys]
+        left_keys = [(f'"{attr}"' if " " in attr else attr) for attr in left_keys]
+        right_keys = [(f'"{attr}"' if " " in attr else attr) for attr in right_keys]
 
         self.joins[relation_left][relation_right] = {"keys": (left_keys, right_keys),
                                                      "message_type": Message.UNDECIDED, }
