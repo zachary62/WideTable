@@ -41,13 +41,17 @@ class JoinGraph:
     def get_relations(self):
         return list(self.relation_info.keys())
 
-    def get_relation_sample(self, relation, select_conds, limit=100):
+    def get_relation_sample(self, relation, select_conds, groupby_conds=[], orderby_conds=[], agg_exprs=None, limit=100):
         if relation not in self.get_relations():
             raise JoinGraphException("The relation doesn't exist!")
 
+        if agg_exprs is None:
+            agg_exprs = {None: ('*', Aggregator.IDENTITY)}
         # get data as pandas because we all want to have the header
-        df = self.exe.execute_spja_query(from_tables=[relation],
+        df = self.exe.execute_spja_query(aggregate_expressions=agg_exprs, from_tables=[relation],
                                          select_conds=select_conds,
+                                         group_by=groupby_conds,
+                                         order_by=orderby_conds,
                                          limit=limit,
                                          mode=5)
         return {"header": df.columns.tolist(), "data": df.values.tolist()}

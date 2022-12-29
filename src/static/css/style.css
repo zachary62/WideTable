@@ -197,6 +197,12 @@ tr:nth-child(even) {
 
 .graphView {
     padding-left: 30px;
+    display: inline-block;
+}
+
+.histView {
+    padding-left: 30px;
+    display: inline-block;
 }
 
 .visualization {

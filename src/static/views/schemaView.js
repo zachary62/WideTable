@@ -6,6 +6,9 @@ export default class SchemaView {
     addClickHandler(handler) {
         this.clickHandler = handler
     }
+    addAttributeClickHandler(handler) {
+        this.attrClickHandler = handler
+    }
 
     unHighlight() {
         this.unExpandSchema()
@@ -85,6 +88,7 @@ export default class SchemaView {
                 d3.event.stopPropagation();
                 this.unHighlightSchema()
                 d3.select(elems[i]).classed('highlight', true)
+                // this.attrClickHandler(d, i, elems)
                 this.clickHandler(d)
             });
 
@@ -98,8 +102,9 @@ export default class SchemaView {
             .attr('id', (d) => { return 'attribute_' + d; })
             .attr('class', 'attribute join_keys')
             .text((d) => { return d; })
-            .on("click", function (d) {
+            .on("click", (d,i, elems) => {
                 d3.event.stopPropagation();
+                this.attrClickHandler(d, i, elems)
             });
 
         // add dimension attributes
@@ -112,8 +117,9 @@ export default class SchemaView {
             .attr('id', (d) => { return 'attribute_' + d; })
             .attr('class', 'attribute')
             .text((d) => { return d; })
-            .on("click", function (d) {
+            .on("click", (d, i, elems) => {
                 d3.event.stopPropagation();
+                this.attrClickHandler(d, i, elems)
             });
 
         this.schemaViewElement.on("mousedown", (d, i, nodes) => {
