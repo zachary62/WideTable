@@ -24,7 +24,7 @@ export default class HistView {
     }
 
     // Draw a histogram using d3.js based on input parameter data
-    drawHistogram(jsonData, visDiv = null) {
+    drawHistogram(jsonData, visDiv = null, relation, attribute) {
         let data = Array.from(jsonData.data)
         if (visDiv == null) {
             visDiv = this.addVisDiv()
@@ -87,6 +87,13 @@ export default class HistView {
             .style("text-anchor", "end")
             .style("font-size", "10px");
 
+        //add a title for the chart at the top
+        svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", 0 - (margin.top / 2))
+            .attr("text-anchor", "middle")
+            .style("font-size", "12px")
+            .text(`Most frequent values for ${relation}.${attribute}`);
 
     }
 

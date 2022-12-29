@@ -136,7 +136,7 @@ export default class VizualizationController {
         let relationName = elems[i].parentNode.__data__.name
         let data = await this.getHistData(relationName, d)
         this.histView.clear()
-        this.histView.drawHistogram(data)
+        this.histView.drawHistogram(data,null, relationName, d)
     }
 
     backgroundClickHandler = () => {
