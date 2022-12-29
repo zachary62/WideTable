@@ -37,6 +37,7 @@ dashboard.register_measurement("sum",'lineitem','l_extendedprice * (1 - l_discou
 def homepage():
     return render_template('index.html')
 
+
 @app.route('/get_relation_sample', methods=['POST'])
 def get_relation_sample():
     print(request)
@@ -44,9 +45,17 @@ def get_relation_sample():
     data = request.get_json()
     
     relation = data["relation"]
+    agg_exprs = data.get("agg_exprs", None)
+    # converting between text to python enum
+    if agg_exprs is not None:
+        for k, v in agg_exprs.items():
+            agg_exprs[k] = (v[0], Aggregator[v[1]])
     selection_conds = data["selection_conds"]
+    groupby_conds = data.get("groupby_conds") or []
+    orderby_conds = data.get("orderby_conds") or []
+    limit = data.get("limit", 100)
     # Return the sample data
-    return jsonify(dashboard.get_relation_sample(relation, selection_conds))
+    return jsonify(dashboard.get_relation_sample(relation, selection_conds, groupby_conds, orderby_conds, agg_exprs, limit))
 
 @app.route('/get_graph')
 def get_graph():

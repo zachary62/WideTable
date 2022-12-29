@@ -1,6 +1,6 @@
 export default class VizualizationController {
 
-    constructor(graph, jGView, schemaView, visView) {
+    constructor(graph, jGView, schemaView, visView, histView) {
         this.jGView = jGView;
         this.schemaView = schemaView;
         this.visView = visView
@@ -8,8 +8,10 @@ export default class VizualizationController {
         this.jGView.addBackgroundClickHandler(this.backgroundClickHandler);
         this.jGView.drawGraph(graph);
         this.schemaView.addClickHandler(this.schemaClickHandler);
+        this.schemaView.addAttributeClickHandler(this.attrClickHandler);
         this.schemaView.drawSchema(graph);
-        this.graph = graph
+        this.graph = graph;
+        this.histView = histView;
     }
 
     getEdges(relationId) {
@@ -25,10 +27,14 @@ export default class VizualizationController {
         // in case we need to handle this in a common way
     }
 
-    getData = async (relation, selection_conds=[]) => {
+    getData = async (relation, selection_conds=[], aggregate_exprs=null,groupby_conds=null, orderby_conds=null,limit=100) => {
         let input = {
             relation: relation,
-            selection_conds: selection_conds
+            selection_conds: selection_conds,
+            groupby_conds: groupby_conds,
+            orderby_conds: orderby_conds,
+            agg_exprs: aggregate_exprs,
+            limit: limit
         }
         let data = await fetch('/get_relation_sample', {
             method: 'POST',
@@ -39,6 +45,13 @@ export default class VizualizationController {
         }).then(response => response.json())
             .then(data => { return data });
         return data
+    }
+
+    getHistData = async (relation, attr) => {
+        let aggregate_expressions = {'count':[`${attr}`, 'COUNT'], attr:[`${attr}`, 'IDENTITY']}
+        let groupby_conds = [`${attr}`]
+        let orderby_conds = [`COUNT(${attr}) DESC`]
+        return await this.getData(relation, [], aggregate_expressions, groupby_conds, orderby_conds,5)
     }
 
     nodeDragEnded = async (d) => {
@@ -118,6 +131,12 @@ export default class VizualizationController {
         this.jGView.unHighlightGraph()
         d.edges.map((e) => this.jGView.highlightRelationEdge(e.left_rel, e.right_rel, e.color))
         d.relations.map((r) => this.jGView.highlightRelationNode(r.name, r.color, r.text))
+    }
+    attrClickHandler = async (d, i, elems) => {
+        let relationName = elems[i].parentNode.__data__.name
+        let data = await this.getHistData(relationName, d)
+        this.histView.clear()
+        this.histView.drawHistogram(data)
     }
 
     backgroundClickHandler = () => {
