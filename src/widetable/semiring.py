@@ -18,7 +18,7 @@ def SemiRingFactory(name,
     if name == "mean":
         return AvgSemiRing(user_table=user_table, attr=attr)
     if name == "count":
-        return SumSemiRing(user_table=user_table)
+        return SumSemiRing(user_table=user_table, attr=attr)
     
     raise Exception('Unsupported Semiring')
 
@@ -150,8 +150,8 @@ class AvgSemiRing(SemiField):
     def get_user_table(self):
         return self.user_table
     
-    def __str__(self):
-        return f'AVG({self.user_table}.{self.attr})'
+    def __str__(self,relation=True):
+        return f'AVG({(self.user_table + ".") if relation else ""}{self.attr})'
 
 # check if expression has all identity aggregator
 # this is for optimization: if all identity aggregator, we don't need to materialize the result

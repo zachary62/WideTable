@@ -98,7 +98,7 @@ class DashBoard(JoinGraph):
     def parse_attributes(self, attributes):
         results = []
         for attr in attributes:
-            result = attr.split(".",1)
+            result = attr.split(".", 1)
             if len(result) == 1:
                 relations = self.get_relation_from_attribute(result[0])
                 if len(relations) == 0:

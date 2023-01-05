@@ -119,7 +119,7 @@ export default class JoinGraphView {
     }
 
     drawGraph(graph) {
-        // this.clearGraph();
+        this.clearGraph();
         var defs = this.svg.append('defs')
 
         defs.append('marker')
@@ -316,5 +316,9 @@ export default class JoinGraphView {
         this.svg.on("mousedown", (d, i, nodes) => {
             this.backgroundClickHandler()
         })
+    }
+
+    clearGraph() {
+        this.svg.selectAll("*").remove();
     }
 }

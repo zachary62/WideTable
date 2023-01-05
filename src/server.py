@@ -8,7 +8,6 @@ from widetable.aggregator import Annotation
 from widetable.dashboard import DashBoard
 from widetable.scope import *
 
-
 app = Flask(__name__)
 
 duck_db_conn = duckdb.connect(database=':memory:')
@@ -28,14 +27,35 @@ dashboard.add_join('orders', 'customer', ['o_custkey'], ['c_custkey'])
 dashboard.add_join('partsupp', 'supplier', ['ps_suppkey'], ['s_suppkey'])
 dashboard.add_join('customer', 'nation', ['c_nationkey'], ['n_nationkey'])
 dashboard.add_join('nation', 'region', ['n_regionkey'], ['r_regionkey'])
-dashboard.add_join('lineitem', 'partsupp', ['l_suppkey','l_partkey'], ['ps_suppkey','ps_partkey'])
+dashboard.add_join('lineitem', 'partsupp', ['l_suppkey', 'l_partkey'], ['ps_suppkey', 'ps_partkey'])
 dashboard.add_join('partsupp', 'part', ['ps_partkey'], ['p_partkey'])
-dashboard.register_measurement("sum",'part','p_retailprice', scope=ReplicateFact('part', 'part'))
-dashboard.register_measurement("sum",'lineitem','l_extendedprice * (1 - l_discount)', scope=ReplicateFact('lineitem', 'lineitem'))
+dashboard.register_measurement("sum", 'part', 'p_retailprice', scope=ReplicateFact('part', 'part'))
+dashboard.register_measurement("sum", 'lineitem', 'l_extendedprice * (1 - l_discount)',
+                               scope=ReplicateFact('lineitem', 'lineitem'))
+
 
 @app.route('/')
 def homepage():
     return render_template('index.html')
+
+
+@app.route('/add_measurement', methods=['POST'])
+def add_measurement():
+    measurement = request.get_json()
+    scope_input = measurement['scope']
+    if scope_input == 'ReplicateFact':
+        scope = ReplicateFact(measurement['relation'], measurement['fact'])
+    elif scope_input == 'FullJoin':
+        scope = FullJoin()
+    elif scope_input == 'Single':
+        scope = SingleRelation(measurement['relation'])
+
+    try:
+        dashboard.register_measurement(measurement['agg'].lower(), measurement['relation'].lower(), measurement['attr'].lower(),
+                                       scope=scope)
+    except Exception as e:
+        return jsonify({'error': str(e)})
+    return jsonify({'success': True})
 
 
 @app.route('/get_relation_sample', methods=['POST'])
@@ -43,7 +63,7 @@ def get_relation_sample():
     print(request)
     # Get the string from the request data
     data = request.get_json()
-    
+
     relation = data["relation"]
     agg_exprs = data.get("agg_exprs", None)
     # converting between text to python enum
@@ -55,7 +75,9 @@ def get_relation_sample():
     orderby_conds = data.get("orderby_conds") or []
     limit = data.get("limit", 100)
     # Return the sample data
-    return jsonify(dashboard.get_relation_sample(relation, selection_conds, groupby_conds, orderby_conds, agg_exprs, limit))
+    return jsonify(
+        dashboard.get_relation_sample(relation, selection_conds, groupby_conds, orderby_conds, agg_exprs, limit))
+
 
 @app.route('/get_graph')
 def get_graph():
