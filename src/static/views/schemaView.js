@@ -53,6 +53,8 @@ export default class SchemaView {
     }
 
     drawSchema(graph) {
+        //clear the view
+        this.schemaViewElement.selectAll("*").remove();
         // add relations
         var schema = this.schemaViewElement
             .selectAll("div")
