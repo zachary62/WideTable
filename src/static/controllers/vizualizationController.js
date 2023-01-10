@@ -58,6 +58,7 @@ export default class VizualizationController {
             body: JSON.stringify(input)
         }).then(response => response.json())
             .then(data => { return data });
+
         return data
     }
 
@@ -81,7 +82,7 @@ export default class VizualizationController {
             },
             body: JSON.stringify(input)
         }).then(response => response.json())
-            .then(data => { return data });
+            .then(data => {return data; });
         return data
     }
 
@@ -183,9 +184,13 @@ export default class VizualizationController {
     }
 
     measSubmitHandler = async (relation, attribute, aggregate, scope) => {
-        await this.addMeasurement(relation, attribute, aggregate, scope)
+        let response = await this.addMeasurement(relation, attribute, aggregate, scope)
+        if (Object.keys(response).includes('error')) {
+            this.measView.clearErrorMessage();
+            this.measView.displayFormErrorMessage(response.error);
+            return;
+        }
         let graph = await get_graph()
-        console.log(graph)
         this.refreshAllViewsWithLatestGraph(graph)
     }
 }

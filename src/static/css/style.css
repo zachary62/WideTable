@@ -19,8 +19,13 @@
     height: 100vh;
     overflow-y: scroll;
 }
+
 .measurementView label {
     color: #ffffff;
+}
+
+.error {
+    color: #d05050;
 }
 
 .links line {

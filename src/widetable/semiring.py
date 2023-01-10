@@ -18,7 +18,7 @@ def SemiRingFactory(name,
     if name == "mean":
         return AvgSemiRing(user_table=user_table, attr=attr)
     if name == "count":
-        return SumSemiRing(user_table=user_table, attr=attr)
+        return CountSemiRing(user_table=user_table, attr=attr)
     
     raise Exception('Unsupported Semiring')
 
@@ -83,8 +83,9 @@ class SumSemiRing(SemiRing):
 
 class CountSemiRing(SemiField):
 
-    def __init__(self, user_table=""):
+    def __init__(self, user_table="", attr=""):
         self.user_table = user_table
+        self.attr = attr
 
     def lift_exp(self, user_table="", c_after='c'):
         return {c_after: ('1', Aggregator.IDENTITY)}
@@ -104,8 +105,8 @@ class CountSemiRing(SemiField):
     def division(self, dividend, divisor, c='c', c_after='c'):
         return {c_after: ([f'"{dividend}"."{c}"', f'"{divisor}"."{c}"'], Aggregator.DIV)}
     
-    def __str__(self):
-        return f'COUNT({self.user_table}.1)'
+    def __str__(self, relation=True):
+        return f'COUNT({(self.user_table + ".") if relation else ""}{self.attr})'
 
 
 class AvgSemiRing(SemiField):

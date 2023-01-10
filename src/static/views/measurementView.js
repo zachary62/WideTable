@@ -1,7 +1,6 @@
 export default class MeasurementView {
     constructor(element) {
         this.measurementViewElement = element;
-
     }
 
     addSubmitHandler(handler) {
@@ -10,6 +9,16 @@ export default class MeasurementView {
 
     addSelectionChangeHandler(handler) {
         this.selectionChangeHandler = handler;
+    }
+
+    // function to clear error message span
+    clearErrorMessage() {
+        d3.select('#error-message').text('');
+    }
+
+    // display error message in the view
+    displayFormErrorMessage(message) {
+        d3.select("#error-message").text(message);
     }
 
     initializeForm(graph) {
@@ -121,15 +130,27 @@ export default class MeasurementView {
             .attr('id', 'submit-button')
             .attr("type", "submit")
             .attr("value", "Add measurement");
+
+        form.append("br");
+        form.append("br");
+        // Add a span to display error messages
+        form.append("span")
+            .attr("id", "error-message")
+            .attr("class", "error");
+
         // attach event listener to submit button
         d3.select("#submit-button").on("click", (d, i, elems) => {
             d3.event.stopPropagation();
             d3.event.preventDefault();
             let relation = d3.select("#relation-dropdown").node().value;
-            let attribute = d3.select("#attribute-dropdown").node().value;
             let scope = d3.select("#scope-dropdown").node().value;
             let aggFunction = d3.select("#agg-function-dropdown").node().value;
-            console.log(relation);
+            let customExprToggle = d3.select("#custom-attr-toggle").node().checked;
+            let attribute = d3.select("#attribute-dropdown").node().value;
+            if (customExprToggle) {
+                attribute = d3.select("#custom-attr-input").node().value;
+            }
+            console.log("attr" + attribute);
             this.submitHandler(relation, attribute, scope, aggFunction);
         });
 
