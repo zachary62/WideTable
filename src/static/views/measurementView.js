@@ -43,7 +43,6 @@ export default class MeasurementView {
             });
         // attach event listener to relation dropdown for any change in selected relation
         d3.select("#relation-dropdown").on("change", (d,i,elems) => {
-            console.log(elems[i].selectedOptions[0].text);
             this.selectionChangeHandler(elems[i].selectedOptions[0].text);
         });
         form.append("br");
@@ -150,7 +149,6 @@ export default class MeasurementView {
             if (customExprToggle) {
                 attribute = d3.select("#custom-attr-input").node().value;
             }
-            console.log("attr" + attribute);
             this.submitHandler(relation, attribute, scope, aggFunction);
         });
 

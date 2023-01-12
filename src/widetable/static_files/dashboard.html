@@ -224,7 +224,6 @@
             d3.event.stopPropagation();
             unHighlightGraph()
             unHighlightSchema()
-            console.log(d)
             d3.select(this).classed('highlight',true)
             d.edges.map((e) => highlightRelationEdge(e.left_rel, e.right_rel, e.color))
             d.relations.map((r) => highlightRelationNode(r.name, r.color, r.text))
