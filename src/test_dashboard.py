@@ -69,6 +69,18 @@ class TestDashboard(unittest.TestCase):
         actual = dashboard.absorption(measurement, mode=3, user_table = "partsupp")
         self.assertTrue(abs(expected[0][0] - actual[0][0])< 1e-1)
         self.assertTrue(abs(expected[0][1] - actual[0][1])< 1e-1)
-        
+
+    def test_count(self):
+        dashboard = initialize_tpch_small_dashboard()
+        expected = dashboard.exe.conn.execute(
+            """
+            SELECT COUNT(ps_availqty)
+            FROM partsupp
+            """
+        ).fetchall()
+        measurement = dashboard.register_measurement("count",'partsupp','ps_availqty', scope=SingleRelation('partsupp'))
+        actual = dashboard.absorption(measurement, mode=3)
+        self.assertTrue(abs(expected[0][0] - actual[0][0])< 1e-5)
+
 if __name__ == '__main__':
     unittest.main()
