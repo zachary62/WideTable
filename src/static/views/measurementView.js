@@ -24,7 +24,9 @@ export default class MeasurementView {
         //clear the view
         this.measurementViewElement.selectAll("*").remove();
         // Create the form container
-        var form = this.measurementViewElement.append("form");
+        var form = this.measurementViewElement
+                       .append("form")
+                       .attr("class", "measurementForm");;
 
         // Add the relation dropdown
         form.append("label")

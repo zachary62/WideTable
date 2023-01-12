@@ -18,7 +18,6 @@ export default class SchemaView {
     unHighlightSchema() {
         this.schemaViewElement.selectAll("span")
             .classed('highlight', false)
-
     }
 
     unExpandSchema() {
