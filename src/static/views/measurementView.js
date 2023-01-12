@@ -11,7 +11,6 @@ export default class MeasurementView {
         this.selectionChangeHandler = handler;
     }
 
-    // function to clear error message span
     clearErrorMessage() {
         d3.select('#error-message').text('');
     }
@@ -154,7 +153,6 @@ export default class MeasurementView {
 
     }
 
-    //function that updates the attribute dropdown when a new relation is selected based on the selected relation with relation as input parameter
     populateAttributeDropdown(relation) {
         d3.select("#attribute-dropdown")
             .selectAll("option")
