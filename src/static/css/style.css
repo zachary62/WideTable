@@ -13,6 +13,20 @@
     height: 100vh;
     overflow-y: scroll;
 }
+.measurementView {
+    background-color: #38425D;
+    width: 220px;
+    height: 100vh;
+    overflow-y: scroll;
+}
+
+.measurementView label {
+    color: #ffffff;
+}
+
+.error {
+    color: #d05050;
+}
 
 .links line {
     stroke: #aaa;

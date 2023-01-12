@@ -1,6 +1,8 @@
+import {get_graph} from "../main.js";
+
 export default class VizualizationController {
 
-    constructor(graph, jGView, schemaView, visView, histView) {
+    constructor(graph, jGView, schemaView, visView, histView, measView) {
         this.jGView = jGView;
         this.schemaView = schemaView;
         this.visView = visView
@@ -12,6 +14,18 @@ export default class VizualizationController {
         this.schemaView.drawSchema(graph);
         this.graph = graph;
         this.histView = histView;
+        this.measView = measView;
+        this.measView.addSubmitHandler(this.measSubmitHandler);
+        this.measView.addSelectionChangeHandler(this.measSelectionChangeHandler);
+        this.measView.initializeForm(graph);
+    }
+
+    refreshAllViewsWithLatestGraph(graph) {
+        this.graph = graph;
+        this.jGView.drawGraph(graph);
+        this.schemaView.drawSchema(graph);
+        this.measView.initializeForm(graph);
+
     }
 
     getEdges(relationId) {
@@ -44,6 +58,7 @@ export default class VizualizationController {
             body: JSON.stringify(input)
         }).then(response => response.json())
             .then(data => { return data });
+
         return data
     }
 
@@ -52,6 +67,23 @@ export default class VizualizationController {
         let groupby_conds = [`${attr}`]
         let orderby_conds = [`COUNT(${attr}) DESC`]
         return await this.getData(relation, [], aggregate_expressions, groupby_conds, orderby_conds,5)
+    }
+    addMeasurement = async (relation, attr, scope, agg) => {
+        let input = {
+            relation: relation,
+            attr: attr,
+            scope: scope,
+            agg: agg
+        }
+        let data = await fetch('/add_measurement', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(input)
+        }).then(response => response.json())
+            .then(data => {return data; });
+        return data
     }
 
     nodeDragEnded = async (d) => {
@@ -142,5 +174,23 @@ export default class VizualizationController {
     backgroundClickHandler = () => {
         this.jGView.unHighlightGraph()
         this.schemaView.unHighlightSchema()
+    }
+
+    measSelectionChangeHandler = (relation)=> {
+        // console.log(this.graph)
+        let node = this.graph.nodes.find((n) => n.name === relation)
+        // console.log(node);
+        this.measView.populateAttributeDropdown(node)
+    }
+
+    measSubmitHandler = async (relation, attribute, aggregate, scope) => {
+        let response = await this.addMeasurement(relation, attribute, aggregate, scope)
+        if (Object.keys(response).includes('error')) {
+            this.measView.clearErrorMessage();
+            this.measView.displayFormErrorMessage(response.error);
+            return;
+        }
+        let graph = await get_graph()
+        this.refreshAllViewsWithLatestGraph(graph)
     }
 }

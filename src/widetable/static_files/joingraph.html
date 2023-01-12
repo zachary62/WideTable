@@ -103,7 +103,7 @@ var nodeText = dataEnter.append("text")
                       .on("drag", dragged)
                       .on("end", dragended));
 
-node.attr("width",function (d) {console.log(this);
+node.attr("width",function (d) {
   return this.parentNode.childNodes[1].getComputedTextLength() + 20}
 )
 
@@ -143,7 +143,6 @@ function ticked() {
 }
 
 function dragstarted(d) {
-    console.log(d)
     if (!d3.event.active) simulation.alphaTarget(0.3).restart();
     d.fx = d.x;
     d.fy = d.y;
