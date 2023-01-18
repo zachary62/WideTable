@@ -14,10 +14,16 @@
     overflow-y: scroll;
 }
 .measurementView {
-    background-color: #38425D;
+    background-color: #313544;
     width: 220px;
     height: 100vh;
     overflow-y: scroll;
+}
+
+.measurementForm {
+    margin: 6px 6px;
+    padding: 3px 3px;
+    border-radius: 3px;
 }
 
 .measurementView label {
