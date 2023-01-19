@@ -164,17 +164,23 @@ div.scroll {
     /* Take up remaining space in the flex container */
 }
 
+.greyed {
+    opacity: 0.5;
+    /*pointer-events: none;*/
+}
+
 .visualization {
     margin: 6px 6px;
     padding: 3px 3px;
     border-radius: 3px;
     overflow: scroll;
     border: 1px solid gray;
-    display: flex;
+    display: inline-flex;
 }
 
 table {
     border-collapse: collapse;
+    float: left;
     /* Remove the space between cells */
 }
 
@@ -225,9 +231,6 @@ tr:nth-child(even) {
     display: inline-block;
 }
 
-.visualization {
-    padding: 10px;
-}
 
 /* Style the tooltip */
 .tooltip {

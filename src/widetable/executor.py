@@ -99,7 +99,9 @@ class DuckdbExecutor(Executor):
                            sample_rate: float = None,
                            replace: bool = True,
                            mode: int = 4,
-                           table_name: str = None):
+                           table_name: str = None,
+                           custom_order_pref: list = []
+                           ):
 
         spja = self.spja_query(aggregate_expressions=aggregate_expressions,
                                from_tables=from_tables,
@@ -108,7 +110,8 @@ class DuckdbExecutor(Executor):
                                window_by=window_by,
                                order_by=order_by,
                                limit=limit,
-                               sample_rate=sample_rate)
+                               sample_rate=sample_rate,
+                               custom_order_pref=custom_order_pref)
         
         if mode == 1:
             if table_name is None:
@@ -153,6 +156,7 @@ class DuckdbExecutor(Executor):
                    order_by: list = [],
                    limit: int = None,
                    sample_rate: float = None,
+                   custom_order_pref: list = []
                    ):
         
         parsed_aggregate_expressions = []
@@ -173,7 +177,17 @@ class DuckdbExecutor(Executor):
         if len(group_by) > 0:
             sql += "GROUP BY " + ",".join(group_by) + '\n'
         if len(order_by) > 0:
-            sql += 'ORDER BY ' + ",".join(order_by) + '\n'
+            # generate order by query with preference given to custom_order_pref values using CASE WHEN
+            order_by_query = 'ORDER BY '
+            if len(custom_order_pref) > 0:
+                for i, col in enumerate(order_by):
+                    order_by_query += f"CASE WHEN {col} = '{custom_order_pref[i]}' THEN 0 ELSE 1 END, {col}"
+                    if i <= len(order_by) - 2:
+                        order_by_query += ', '
+                sql += order_by_query + '\n'
+            else:
+                sql += "ORDER BY " + ",".join(order_by) + '\n'
+
         if limit is not None:
             sql += 'LIMIT ' + str(limit) + '\n'
         if sample_rate is not None:

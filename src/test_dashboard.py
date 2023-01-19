@@ -64,11 +64,11 @@ class TestDashboard(unittest.TestCase):
     def test_average_attribution(self):
         dashboard = initialize_tpch_small_dashboard()
         scope = AverageAttribution("partsupp")
-        measurement = dashboard.register_measurement("avg",'partsupp','ps_availqty', scope=scope)
-        expected = dashboard.absorption(measurement, mode=3, user_table = "lineitem")
-        actual = dashboard.absorption(measurement, mode=3, user_table = "partsupp")
-        self.assertTrue(abs(expected[0][0] - actual[0][0])< 1e-1)
-        self.assertTrue(abs(expected[0][1] - actual[0][1])< 1e-1)
+        measurement = dashboard.register_measurement("avg", 'partsupp', 'ps_availqty', scope=scope)
+        expected = dashboard.absorption(measurement, mode=3, user_table="lineitem")
+        actual = dashboard.absorption(measurement, mode=3, user_table="partsupp")
+        self.assertTrue(abs(expected[0][0] - actual[0][0]) < 1e-1)
+        self.assertTrue(abs(expected[0][1] - actual[0][1]) < 1e-1)
 
     def test_count(self):
         dashboard = initialize_tpch_small_dashboard()
@@ -78,7 +78,7 @@ class TestDashboard(unittest.TestCase):
             FROM partsupp
             """
         ).fetchall()
-        measurement = dashboard.register_measurement("count",'partsupp','ps_availqty', scope=SingleRelation('partsupp'))
+        measurement = dashboard.register_measurement("count", 'partsupp', 'ps_availqty', scope=SingleRelation('partsupp'))
         actual = dashboard.absorption(measurement, mode=3)
         self.assertTrue(abs(expected[0][0] - actual[0][0])< 1e-5)
 

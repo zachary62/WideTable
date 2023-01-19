@@ -26,7 +26,7 @@ export default class MeasurementView {
         // Create the form container
         var form = this.measurementViewElement
                        .append("form")
-                       .attr("class", "measurementForm");;
+                       .attr("class", "measurementForm");
 
         // Add the relation dropdown
         form.append("label")
@@ -152,7 +152,6 @@ export default class MeasurementView {
             }
             this.submitHandler(relation, attribute, scope, aggFunction);
         });
-
     }
 
     populateAttributeDropdown(relation) {
