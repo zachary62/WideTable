@@ -165,7 +165,7 @@ export default class VizualizationController {
         let cur_join_key_tuples = leftTableData["data"].map(row => cur_join_key_idxs.map(idx => row[idx]))
         let cur_join_key_set = new Set(cur_join_key_tuples.map(JSON.stringify))
         // get right table data but filter for only join key values
-        let next_selection_conds = Array.from(cur_join_key_set).map(JSON.parse).map(tuple => tuple.map((key, idx) => next_join_keys[idx] + " = " + key).join(" AND ")).join(" OR ")
+        let next_selection_conds = Array.from(cur_join_key_set).map(JSON.parse).map(tuple => tuple.map((key, idx) => next_join_keys[idx] + " = " + `'${key}'`).join(" AND ")).join(" OR ")
         let rightTableData = await this.getData(next_tablename, [next_selection_conds],null,null, next_join_keys, 1000, selected_join_values)
 
         let next_join_key_idxs = next_join_keys.map(key => rightTableData["header"].indexOf(key))
