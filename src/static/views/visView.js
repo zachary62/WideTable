@@ -37,7 +37,6 @@ export default class VisView {
 
     // delete this table and all tables after the given index
     deleteTablesAfter(tableIdx) {
-        console.log("trying to delete tables after and including " + tableIdx)
         d3.selectAll("table")
 
             .filter((d, i, elems)  => {

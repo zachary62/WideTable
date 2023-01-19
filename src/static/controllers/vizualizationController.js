@@ -146,18 +146,13 @@ export default class VizualizationController {
         let next_tablename = tablename === d.source.id ? d.target.name: d.source.name
         let selected_join_values = cur_join_keys.map(key => data[schema.indexOf(key)])
         let cur_selection_conds = cur_join_keys.map(key => key + " = " + data[schema.indexOf(key)])
-        let next_selection_conds = next_join_keys.map((key, idx) => key + " = " + data[schema.indexOf(cur_join_keys[idx])])
 
-        // this.visView.clear()
-        // let visDiv = this.visView.addVisDiv()
-        let visDiv = null
 
 
         let leftTableData = await this.getData(tablename, [], null, null, cur_join_keys, 1000, selected_join_values)
         let projection = {}
         cur_join_keys.map(key => projection[key] = [key, 'IDENTITY'])
         let joinTable = await this.getData(tablename, [],projection,null, cur_join_keys, 1000, selected_join_values)
-        let rightTableData = await this.getData(next_tablename, [],null,null, next_join_keys, 1000, selected_join_values)
 
         let links1 = this.getEdges(tablename)
         let links2 = this.getEdges(next_tablename)
@@ -167,19 +162,21 @@ export default class VizualizationController {
         let leftcellHeights = []
         let rightCellHeights = []
         let cur_join_key_idxs = cur_join_keys.map( key => leftTableData["header"].indexOf(key))
-        let next_join_key_idxs = next_join_keys.map(key => rightTableData["header"].indexOf(key))
-        let cur_join_key_tuples = leftTableData["data"].map(row => {
-            let keyTuple = cur_join_key_idxs.map(idx => row[idx])
-            return keyTuple
-        })
+        let cur_join_key_tuples = leftTableData["data"].map(row => cur_join_key_idxs.map(idx => row[idx]))
         let cur_join_key_set = new Set(cur_join_key_tuples.map(JSON.stringify))
+        // get right table data but filter for only join key values
+        let next_selection_conds = Array.from(cur_join_key_set).map(JSON.parse).map(tuple => tuple.map((key, idx) => next_join_keys[idx] + " = " + key).join(" AND ")).join(" OR ")
+        let rightTableData = await this.getData(next_tablename, [next_selection_conds],null,null, next_join_keys, 1000, selected_join_values)
+
+        let next_join_key_idxs = next_join_keys.map(key => rightTableData["header"].indexOf(key))
         Array.from(cur_join_key_set).map(JSON.parse).forEach(key_tuple => {
             let l_count = cur_join_key_tuples.filter(k => JSON.stringify(k) === JSON.stringify(key_tuple)).length
             let r_count = rightTableData["data"].filter(row => JSON.stringify(next_join_key_idxs.map(idx => row[idx])) === JSON.stringify(key_tuple)).length
             let max_count = Math.max(l_count, r_count)
             cellHeights.push(max_count)
-            leftcellHeights.push(max_count/l_count)
-            rightCellHeights.push(max_count/r_count)
+            // push to array l_count times
+            leftcellHeights.push(...Array(l_count).fill(max_count/l_count))
+            rightCellHeights.push(...Array(r_count).fill(max_count/r_count))
         });
 
 
@@ -187,9 +184,9 @@ export default class VizualizationController {
         this.visView.greyOutAllTables(tableIdx);
         // delete all tables after the current table (including the current table) so we can redraw them
         this.visView.deleteTablesAfter(tableIdx);
-        this.visView.drawSingleTable(tablename, leftTableData["header"], leftTableData["data"], links1, leftcellHeights, visDiv, this.exploreHandler)
-        this.visView.drawSingleTable("-", joinTable["header"], Array.from(cur_join_key_set).map(JSON.parse), [], cellHeights, visDiv, this.exploreHandler)
-        this.visView.drawSingleTable(next_tablename, rightTableData["header"], rightTableData["data"], links2, rightCellHeights, visDiv, this.exploreHandler)
+        this.visView.drawSingleTable(tablename, leftTableData["header"], leftTableData["data"], links1, leftcellHeights, null, this.exploreHandler)
+        this.visView.drawSingleTable("-", joinTable["header"], Array.from(cur_join_key_set).map(JSON.parse), [], cellHeights, null, this.exploreHandler)
+        this.visView.drawSingleTable(next_tablename, rightTableData["header"], rightTableData["data"], links2, rightCellHeights, null, this.exploreHandler)
 
     }
 
