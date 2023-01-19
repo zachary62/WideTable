@@ -41,13 +41,15 @@ export default class VizualizationController {
         // in case we need to handle this in a common way
     }
 
-    getData = async (relation, selection_conds=[], aggregate_exprs=null,groupby_conds=null, orderby_conds=null,limit=100) => {
+    getData = async (relation, selection_conds=[], aggregate_exprs=null, groupby_conds=null,
+                     orderby_conds=null, limit=100, custom_order_pref= null) => {
         let input = {
             relation: relation,
             selection_conds: selection_conds,
             groupby_conds: groupby_conds,
             orderby_conds: orderby_conds,
             agg_exprs: aggregate_exprs,
+            custom_order_pref: custom_order_pref,
             limit: limit
         }
         let data = await fetch('/get_relation_sample', {
@@ -92,8 +94,8 @@ export default class VizualizationController {
 
         this.visView.clear()
         let tablename = d["name"]
-
-        let data = await this.getData(tablename)
+        let orderby_conds = d["join_keys"];
+        let data = await this.getData(tablename,[], null, null, orderby_conds)
 
         let links = this.getEdges(d["id"])
         this.visView.clear()
@@ -137,25 +139,57 @@ export default class VizualizationController {
         let data = d["d"]
         let schema = d["schema"]
         let tablename =  d["tablename"]
+        let tableIdx = d["tableIdx"]
 
-        console.log(element)
         let cur_join_keys = tablename === d.source.id ? d.left_keys[0]: d.left_keys[1]
         let next_join_keys = tablename === d.source.id ? d.left_keys[1]: d.left_keys[0]
         let next_tablename = tablename === d.source.id ? d.target.name: d.source.name
+        let selected_join_values = cur_join_keys.map(key => data[schema.indexOf(key)])
         let cur_selection_conds = cur_join_keys.map(key => key + " = " + data[schema.indexOf(key)])
         let next_selection_conds = next_join_keys.map((key, idx) => key + " = " + data[schema.indexOf(cur_join_keys[idx])])
 
         // this.visView.clear()
         // let visDiv = this.visView.addVisDiv()
+        let visDiv = null
 
-        // let data1 = await this.getData(tablename, cur_selection_conds)
-        let data2 = await this.getData(next_tablename, next_selection_conds)
+
+        let leftTableData = await this.getData(tablename, [], null, null, cur_join_keys, 1000, selected_join_values)
+        let projection = {}
+        cur_join_keys.map(key => projection[key] = [key, 'IDENTITY'])
+        let joinTable = await this.getData(tablename, [],projection,null, cur_join_keys, 1000, selected_join_values)
+        let rightTableData = await this.getData(next_tablename, [],null,null, next_join_keys, 1000, selected_join_values)
 
         let links1 = this.getEdges(tablename)
         let links2 = this.getEdges(next_tablename)
-        
-        // this.visView.drawSingleTable(tablename, data1["header"], data1["data"], links1, null, visDiv, this.exploreHandler)
-        this.visView.drawSingleTable(next_tablename, data2["header"], data2["data"], links2, null, element, this.exploreHandler)
+
+        // generate cell height array by counting the number of rows in left table with the same join key
+        let cellHeights = []
+        let leftcellHeights = []
+        let rightCellHeights = []
+        let cur_join_key_idxs = cur_join_keys.map( key => leftTableData["header"].indexOf(key))
+        let next_join_key_idxs = next_join_keys.map(key => rightTableData["header"].indexOf(key))
+        let cur_join_key_tuples = leftTableData["data"].map(row => {
+            let keyTuple = cur_join_key_idxs.map(idx => row[idx])
+            return keyTuple
+        })
+        let cur_join_key_set = new Set(cur_join_key_tuples.map(JSON.stringify))
+        Array.from(cur_join_key_set).map(JSON.parse).forEach(key_tuple => {
+            let l_count = cur_join_key_tuples.filter(k => JSON.stringify(k) === JSON.stringify(key_tuple)).length
+            let r_count = rightTableData["data"].filter(row => JSON.stringify(next_join_key_idxs.map(idx => row[idx])) === JSON.stringify(key_tuple)).length
+            let max_count = Math.max(l_count, r_count)
+            cellHeights.push(max_count)
+            leftcellHeights.push(max_count/l_count)
+            rightCellHeights.push(max_count/r_count)
+        });
+
+
+        // grey out all existing tables in visView
+        this.visView.greyOutAllTables(tableIdx);
+        // delete all tables after the current table (including the current table) so we can redraw them
+        this.visView.deleteTablesAfter(tableIdx);
+        this.visView.drawSingleTable(tablename, leftTableData["header"], leftTableData["data"], links1, leftcellHeights, visDiv, this.exploreHandler)
+        this.visView.drawSingleTable("-", joinTable["header"], Array.from(cur_join_key_set).map(JSON.parse), [], cellHeights, visDiv, this.exploreHandler)
+        this.visView.drawSingleTable(next_tablename, rightTableData["header"], rightTableData["data"], links2, rightCellHeights, visDiv, this.exploreHandler)
 
     }
 
@@ -177,9 +211,7 @@ export default class VizualizationController {
     }
 
     measSelectionChangeHandler = (relation)=> {
-        // console.log(this.graph)
         let node = this.graph.nodes.find((n) => n.name === relation)
-        // console.log(node);
         this.measView.populateAttributeDropdown(node)
     }
 

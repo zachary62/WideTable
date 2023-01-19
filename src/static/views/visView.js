@@ -4,24 +4,47 @@ export default class VisView {
 
         this.width = width;
         this.height = height;
-        this.defaultCellHeight = 20
+        this.defaultCellHeight = 24
+        this.tableCount = 0;
     }
 
     clear() {
         this.tableViewElement
             .selectAll("div")
             .remove()
+        this.visDiv = null;
     }
 
     addVisDiv() {
-        let visDiv = this.tableViewElement
-            .append("div")
-            .classed("visualization", true)
+        if (this.visDiv == null) {
 
-        visDiv.style("width", this.width + "px")
-        visDiv.style("height", this.height + "px")
+            this.visDiv = this.tableViewElement
+                .append("div")
+                .classed("visualization", true)
 
-        return visDiv
+            this.visDiv.style("width", this.width + "px")
+            this.visDiv.style("height", this.height + "px")
+        }
+        return this.visDiv
+
+    }
+
+    greyOutAllTables(tableIdx) {
+        d3.selectAll("table")
+            .filter(function(d, i) { return i < tableIdx; })
+            .classed("greyed", true)
+    }
+
+    // delete this table and all tables after the given index
+    deleteTablesAfter(tableIdx) {
+        console.log("trying to delete tables after and including " + tableIdx)
+        d3.selectAll("table")
+
+            .filter((d, i, elems)  => {
+                // generate code to split "table_idx" to get idx value
+                let idx = parseInt(elems[i].id.split("_")[1])
+                return idx >= tableIdx; })
+            .remove()
     }
 
     drawDoubleTable(tablename1, schema1, data1, links1,
@@ -30,19 +53,24 @@ export default class VisView {
         drawSingleTable(tablename2, schema2, data2, links2)
     }
 
-    drawSingleTable(tablename, schema, data, links, cellHeight = -1, visDiv = null, exploreHandler) {
-        if (cellHeight == -1) {
-            cellHeight = this.defaultCellHeight
+    drawSingleTable(tablename, schema, data, links, cellHeights = [], visDiv = null, exploreHandler) {
+
+        if (cellHeights == null || cellHeights.length === 0) {
+            cellHeights = Array(data.length).fill(this.defaultCellHeight);
+        } else {
+            cellHeights = cellHeights.map(d => d * this.defaultCellHeight);
         }
 
         if (visDiv == null) {
             visDiv = this.addVisDiv()
         }
 
-        visDiv = visDiv.append("table")
+        this.tableCount+= 1;
+        let tableIdx = this.tableCount -1;
+        visDiv = visDiv.append("table").attr('id', 'table_' + tableIdx)
         // Create a schema row and append it to the table
         let nameRow = visDiv.append("tr")
-            // .attr("height", this.defaultCellHeight);
+            .attr("height", this.defaultCellHeight);
 
         // Add a row for table name
         nameRow.append("th")
@@ -69,14 +97,15 @@ export default class VisView {
             .enter()
             .append("tr")
             .classed("data", true)
-            .attr("height", cellHeight);
+            .attr("height", function(d, i) {
+                return cellHeights[i];
+            });
 
         // Append a cell for each element in the row array
         var cells = rows.selectAll("td")
             .data(function (d) { return d; })
             .enter()
             .append("td")
-            .classed("single", true)
             .classed("single", true)
 
         cells.text(function (d) { return d; });
@@ -106,6 +135,7 @@ export default class VisView {
             .data(function (d) {
                 // create deep copy
                 let linksCopy = JSON.parse(JSON.stringify(Array.from(links)));
+                // console.log(linksCopy)
                 return linksCopy
             })
             .enter()
@@ -115,11 +145,15 @@ export default class VisView {
 
         // Append the links in the row array
         var linkCell = rows.selectAll("td.link")
-            .data(function (d) {
+            .data((d, i) => {
                 let linksCopy = JSON.parse(JSON.stringify(Array.from(links)));
                 // each link store additional information about tuple, schema and table
                 // these are necessary for exploration
-                return linksCopy.map(link => { link["d"] = d; link["schema"] = schema; link["tablename"] = tablename; return link });
+                let filtered = linksCopy.map(link => { link["d"] = d; link["schema"] = schema;
+                    link["tableIdx"] = tableIdx;
+                    link["tablename"] = tablename; return link });
+                // console.log(filtered);
+                return filtered;
             })
             .enter()
             .append("td")

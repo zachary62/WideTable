@@ -41,7 +41,7 @@ class JoinGraph:
     def get_relations(self):
         return list(self.relation_info.keys())
 
-    def get_relation_sample(self, relation, select_conds, groupby_conds=[], orderby_conds=[], agg_exprs=None, limit=100):
+    def get_relation_sample(self, relation, select_conds, groupby_conds=[], orderby_conds=[], agg_exprs=None, limit=100, custom_order_pref=[]):
         if relation not in self.get_relations():
             raise JoinGraphException("The relation doesn't exist!")
 
@@ -53,6 +53,7 @@ class JoinGraph:
                                          group_by=groupby_conds,
                                          order_by=orderby_conds,
                                          limit=limit,
+                                         custom_order_pref=custom_order_pref,
                                          mode=5)
         return {"header": df.columns.tolist(), "data": df.values.tolist()}
 
