@@ -95,7 +95,7 @@ export default class VizualizationController {
         this.visView.clear()
         let tablename = d["name"]
         let orderby_conds = d["join_keys"];
-        let data = await this.getData(tablename,[], null, null, orderby_conds)
+        let data = await this.getData(tablename,[], null, null, orderby_conds, null)
 
         let links = this.getEdges(d["id"])
         this.visView.clear()
@@ -149,13 +149,16 @@ export default class VizualizationController {
 
 
 
-        let leftTableData = await this.getData(tablename, [], null, null, cur_join_keys, 1000, selected_join_values)
+        let leftTableData = await this.getData(tablename, [], null, null, cur_join_keys, null, selected_join_values)
         let projection = {}
         cur_join_keys.map(key => projection[key] = [key, 'IDENTITY'])
-        let joinTable = await this.getData(tablename, [],projection,null, cur_join_keys, 1000, selected_join_values)
+        let joinTable = await this.getData(tablename, [],projection,null, cur_join_keys, null, selected_join_values)
 
         let links1 = this.getEdges(tablename)
         let links2 = this.getEdges(next_tablename)
+
+        // generate sql query for duckdb to sort data according to a column, but with specific values first
+
 
         // generate cell height array by counting the number of rows in left table with the same join key
         let cellHeights = []
@@ -166,7 +169,7 @@ export default class VizualizationController {
         let cur_join_key_set = new Set(cur_join_key_tuples.map(JSON.stringify))
         // get right table data but filter for only join key values
         let next_selection_conds = Array.from(cur_join_key_set).map(JSON.parse).map(tuple => tuple.map((key, idx) => next_join_keys[idx] + " = " + `'${key}'`).join(" AND ")).join(" OR ")
-        let rightTableData = await this.getData(next_tablename, [next_selection_conds],null,null, next_join_keys, 1000, selected_join_values)
+        let rightTableData = await this.getData(next_tablename, [next_selection_conds],null,null, next_join_keys, null, selected_join_values)
 
         let next_join_key_idxs = next_join_keys.map(key => rightTableData["header"].indexOf(key))
         Array.from(cur_join_key_set).map(JSON.parse).forEach(key_tuple => {

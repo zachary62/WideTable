@@ -181,7 +181,7 @@ class DuckdbExecutor(Executor):
             order_by_query = 'ORDER BY '
             if len(custom_order_pref) > 0:
                 for i, col in enumerate(order_by):
-                    order_by_query += f"CASE WHEN {col} = '{custom_order_pref[i]}' THEN 0 ELSE 1 END, {col}"
+                    order_by_query += f" {col} = '{custom_order_pref[i]}' DESC, {col}"
                     if i <= len(order_by) - 2:
                         order_by_query += ', '
                 sql += order_by_query + '\n'

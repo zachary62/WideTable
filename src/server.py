@@ -39,57 +39,57 @@ app = Flask(__name__)
 duck_db_conn = duckdb.connect(database=':memory:')
 join_graph = JoinGraph(duck_db_conn)
 dashboard = DashBoard(join_graph)
-dashboard.add_relation('allergies', relation_address='../data/synthea/allergies.csv')
-dashboard.add_relation('careplans', relation_address='../data/synthea/careplans.csv')
-dashboard.add_relation('claims_transactions', relation_address='../data/synthea/claims_transactions.csv')
-dashboard.add_relation('claims', relation_address='../data/synthea/claims.csv')
-dashboard.add_relation('conditions', relation_address='../data/synthea/conditions.csv')
-dashboard.add_relation('devices', relation_address='../data/synthea/devices.csv')
+# dashboard.add_relation('allergies', relation_address='../data/synthea/allergies.csv')
+# dashboard.add_relation('careplans', relation_address='../data/synthea/careplans.csv')
+# dashboard.add_relation('claims_transactions', relation_address='../data/synthea/claims_transactions.csv')
+# dashboard.add_relation('claims', relation_address='../data/synthea/claims.csv')
+# dashboard.add_relation('conditions', relation_address='../data/synthea/conditions.csv')
+# dashboard.add_relation('devices', relation_address='../data/synthea/devices.csv')
 dashboard.add_relation('encounters', relation_address='../data/synthea/encounters.csv')
 dashboard.add_relation('imaging_studies', relation_address='../data/synthea/imaging_studies.csv')
-dashboard.add_relation('immunizations', relation_address='../data/synthea/immunizations.csv')
+# dashboard.add_relation('immunizations', relation_address='../data/synthea/immunizations.csv')
 dashboard.add_relation('medications', relation_address='../data/synthea/medications.csv')
-dashboard.add_relation('observations', relation_address='../data/synthea/observations.csv')
+# dashboard.add_relation('observations', relation_address='../data/synthea/observations.csv')
 dashboard.add_relation('organizations', relation_address='../data/synthea/organizations.csv')
 dashboard.add_relation('patients', relation_address='../data/synthea/patients.csv')
-dashboard.add_relation('payer_transitions', relation_address='../data/synthea/payer_transitions.csv')
+# dashboard.add_relation('payer_transitions', relation_address='../data/synthea/payer_transitions.csv')
 dashboard.add_relation('payers', relation_address='../data/synthea/payers.csv')
 dashboard.add_relation('procedures', relation_address='../data/synthea/procedures.csv')
 dashboard.add_relation('providers', relation_address='../data/synthea/providers.csv')
-dashboard.add_relation('supplies', relation_address='../data/synthea/supplies.csv')
+# dashboard.add_relation('supplies', relation_address='../data/synthea/supplies.csv')
 
-dashboard.add_join('allergies', 'patients', ['PATIENT'], ['Id']);
-dashboard.add_join('careplans', 'patients', ['PATIENT'], ['Id']);
+# dashboard.add_join('allergies', 'patients', ['PATIENT'], ['Id']);
+# dashboard.add_join('careplans', 'patients', ['PATIENT'], ['Id']);
 dashboard.add_join('procedures', 'patients', ['PATIENT'], ['Id']);
 dashboard.add_join('providers', 'organizations', ['ORGANIZATION'], ['Id']);
-dashboard.add_join('supplies', 'patients', ['PATIENT'], ['Id']);
-dashboard.add_join('observations', 'patients', ['PATIENT'], ['Id']);
+# dashboard.add_join('supplies', 'patients', ['PATIENT'], ['Id']);
+# dashboard.add_join('observations', 'patients', ['PATIENT'], ['Id']);
 dashboard.add_join('encounters', 'patients', ['PATIENT'], ['Id']);
 dashboard.add_join('encounters', 'organizations', ['ORGANIZATION'], ['Id']);
 dashboard.add_join('encounters', 'providers', ['PROVIDER'], ['Id']);
 dashboard.add_join('encounters', 'payers', ['PAYER'], ['Id']);
 dashboard.add_join('imaging_studies', 'encounters', ['ENCOUNTER'], ['Id']);
-dashboard.add_join('allergies', 'encounters', ['ENCOUNTER'], ['Id']);
-dashboard.add_join('observations', 'encounters', ['ENCOUNTER'], ['Id']);
+# dashboard.add_join('allergies', 'encounters', ['ENCOUNTER'], ['Id']);
+# dashboard.add_join('observations', 'encounters', ['ENCOUNTER'], ['Id']);
 dashboard.add_join('procedures', 'encounters', ['ENCOUNTER'], ['Id']);
-dashboard.add_join('careplans', 'encounters', ['ENCOUNTER'], ['Id']);
+# dashboard.add_join('careplans', 'encounters', ['ENCOUNTER'], ['Id']);
 dashboard.add_join('imaging_studies', 'patients', ['PATIENT'], ['Id']);
 dashboard.add_join('imaging_studies', 'procedures', ['PROCEDURE_CODE'], ['CODE']);
-dashboard.add_join('claims_transactions', 'providers', ['PROVIDERID'], ['Id']);
-dashboard.add_join('claims_transactions', 'patients', ['PATIENTID'], ['Id']);
-dashboard.add_join('conditions', 'encounters', ['ENCOUNTER'], ['Id']);
-dashboard.add_join('conditions', 'patients', ['PATIENT'], ['Id']);
-dashboard.add_join('devices', 'encounters', ['ENCOUNTER'], ['Id']);
-dashboard.add_join('devices', 'patients', ['PATIENT'], ['Id']);
-dashboard.add_join('immunizations', 'encounters', ['ENCOUNTER'], ['Id']);
-dashboard.add_join('immunizations', 'patients', ['PATIENT'], ['Id']);
+# dashboard.add_join('claims_transactions', 'providers', ['PROVIDERID'], ['Id']);
+# dashboard.add_join('claims_transactions', 'patients', ['PATIENTID'], ['Id']);
+# dashboard.add_join('conditions', 'encounters', ['ENCOUNTER'], ['Id']);
+# dashboard.add_join('conditions', 'patients', ['PATIENT'], ['Id']);
+# dashboard.add_join('devices', 'encounters', ['ENCOUNTER'], ['Id']);
+# dashboard.add_join('devices', 'patients', ['PATIENT'], ['Id']);
+# dashboard.add_join('immunizations', 'encounters', ['ENCOUNTER'], ['Id']);
+# dashboard.add_join('immunizations', 'patients', ['PATIENT'], ['Id']);
 dashboard.add_join('medications', 'encounters', ['ENCOUNTER'], ['Id']);
 dashboard.add_join('medications', 'patients', ['PATIENT'], ['Id']);
 dashboard.add_join('medications', 'payers', ['PAYER'], ['Id']);
-dashboard.add_join('claims', 'patients', ['PATIENTID'], ['Id']);
-dashboard.add_join('claims', 'providers', ['PROVIDERID'], ['Id']);
-dashboard.add_join('payer_transitions', 'patients', ['PATIENT'], ['Id']);
-dashboard.add_join('payer_transitions', 'payers', ['PAYER'], ['Id']);
+# dashboard.add_join('claims', 'patients', ['PATIENTID'], ['Id']);
+# dashboard.add_join('claims', 'providers', ['PROVIDERID'], ['Id']);
+# dashboard.add_join('payer_transitions', 'patients', ['PATIENT'], ['Id']);
+# dashboard.add_join('payer_transitions', 'payers', ['PAYER'], ['Id']);
 
 
 @app.route('/')
@@ -132,7 +132,7 @@ def get_relation_sample():
     groupby_conds = data.get("groupby_conds") or []
     orderby_conds = data.get("orderby_conds") or []
     custom_order_pref = data.get("custom_order_pref") or []
-    limit = data.get("limit", 1000)
+    limit = data.get("limit", None)
     # Return the sample data
     temp = dashboard.get_relation_sample(relation, selection_conds, groupby_conds, orderby_conds, agg_exprs, limit,
                                       custom_order_pref)
