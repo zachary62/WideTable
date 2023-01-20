@@ -157,10 +157,7 @@ export default class VizualizationController {
         let links1 = this.getEdges(tablename)
         let links2 = this.getEdges(next_tablename)
 
-        // generate sql query for duckdb to sort data according to a column, but with specific values first
 
-
-        // generate cell height array by counting the number of rows in left table with the same join key
         let cellHeights = []
         let leftcellHeights = []
         let rightCellHeights = []
@@ -172,23 +169,31 @@ export default class VizualizationController {
         let rightTableData = await this.getData(next_tablename, [next_selection_conds],null,null, next_join_keys, null, selected_join_values)
 
         let next_join_key_idxs = next_join_keys.map(key => rightTableData["header"].indexOf(key))
-        Array.from(cur_join_key_set).map(JSON.parse).forEach(key_tuple => {
-            let l_count = cur_join_key_tuples.filter(k => JSON.stringify(k) === JSON.stringify(key_tuple)).length
-            let r_count = rightTableData["data"].filter(row => JSON.stringify(next_join_key_idxs.map(idx => row[idx])) === JSON.stringify(key_tuple)).length
-            let max_count = Math.max(l_count, r_count)
-            cellHeights.push(max_count)
-            // push to array l_count times
-            leftcellHeights.push(...Array(l_count).fill(max_count/l_count))
-            rightCellHeights.push(...Array(r_count).fill(max_count/r_count))
-        });
+
+        // calculates cell heights of left table rows, right table rows and join row cell height
+        function calculateCellHeights() {
+            Array.from(cur_join_key_set).map(JSON.parse).forEach(key_tuple => {
+                let l_count = cur_join_key_tuples.filter(k => JSON.stringify(k) === JSON.stringify(key_tuple)).length
+                let r_count = rightTableData["data"].filter(row => JSON.stringify(next_join_key_idxs.map(idx => row[idx])) === JSON.stringify(key_tuple)).length
+                let max_count = Math.max(l_count, r_count)
+                cellHeights.push(max_count)
+                leftcellHeights.push(...Array(l_count).fill(max_count / l_count))
+                rightCellHeights.push(...Array(r_count).fill(max_count / r_count))
+            });
+        }
+
+        calculateCellHeights();
 
 
         // grey out all existing tables in visView
         this.visView.greyOutAllTables(tableIdx);
         // delete all tables after the current table (including the current table) so we can redraw them
         this.visView.deleteTablesAfter(tableIdx);
+        // redraw left table
         this.visView.drawSingleTable(tablename, leftTableData["header"], leftTableData["data"], links1, leftcellHeights, null, this.exploreHandler)
+        // draw join table
         this.visView.drawSingleTable("-", joinTable["header"], Array.from(cur_join_key_set).map(JSON.parse), [], cellHeights, null, this.exploreHandler)
+        // draw right table
         this.visView.drawSingleTable(next_tablename, rightTableData["header"], rightTableData["data"], links2, rightCellHeights, null, this.exploreHandler)
 
     }

@@ -177,7 +177,7 @@ class DuckdbExecutor(Executor):
         if len(group_by) > 0:
             sql += "GROUP BY " + ",".join(group_by) + '\n'
         if len(order_by) > 0:
-            # generate order by query with preference given to custom_order_pref values using CASE WHEN
+            # generate order by query with preference given to custom_order_pref values
             order_by_query = 'ORDER BY '
             if len(custom_order_pref) > 0:
                 for i, col in enumerate(order_by):
