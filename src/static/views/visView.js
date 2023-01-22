@@ -51,15 +51,27 @@ export default class VisView {
         drawSingleTable(tablename1, schema1, data1, links1)
         drawSingleTable(tablename2, schema2, data2, links2)
     }
-
+    
+    /**
+     * draw a single table 
+     * @param {string} tablename - The header of the table
+     * @param {array} schema - A list of attribute names 
+     * @param {array} data - A list of tuples, each tuple is also a list of values ordered according to the schema
+     * @param {dictory} links - Stores the join key information in the join graph
+     * @param {array} [cellHeights=[]] - The height of each cell in the table
+     * @param {HTMLElement} [visDiv=null] - The HTML div element to draw the table in
+     * @param {function} [exploreHandler=null] - A function to trigger events for table exploration
+     */
     drawSingleTable(tablename, schema, data, links, cellHeights = [], visDiv = null, exploreHandler) {
-
+        // if cellHeights is not provided or it's empty, set it to default cell height
         if (cellHeights == null || cellHeights.length === 0) {
             cellHeights = Array(data.length).fill(this.defaultCellHeight);
         } else {
+            // otherwise, scale cell heights to default cell height
             cellHeights = cellHeights.map(d => d * this.defaultCellHeight);
         }
 
+        // if no division is given, create a new division for the table
         if (visDiv == null) {
             visDiv = this.addVisDiv()
         }
@@ -68,8 +80,7 @@ export default class VisView {
         let tableIdx = this.tableCount -1;
         visDiv = visDiv.append("table").attr('id', 'table_' + tableIdx)
         // Create a schema row and append it to the table
-        let nameRow = visDiv.append("tr")
-            .attr("height", this.defaultCellHeight);
+        let nameRow = visDiv.append("tr").attr("height", this.defaultCellHeight);
 
         // Add a row for table name
         nameRow.append("th")
@@ -77,9 +88,7 @@ export default class VisView {
             .attr("colspan", data[0].length + links.length)
             .classed("tablename", true)
             .classed("single", true)
-
         let attributeRow = visDiv.append("tr")
-            // .attr("height", this.defaultCellHeight);
 
         // Add a cell for each item in the schema list
         attributeRow.selectAll("th.schema")
@@ -87,7 +96,8 @@ export default class VisView {
             .enter()
             .append("th")
             .text((d) => d)
-            .classed("dschemaata", true)
+            .attr("height", this.defaultCellHeight)
+            .classed("schema", true)
             .classed("single", true)
 
         // Append a row for each element in the data array
@@ -106,8 +116,7 @@ export default class VisView {
             .enter()
             .append("td")
             .classed("single", true)
-
-        cells.text(function (d) { return d; });
+            .text(function (d) { return d; });
 
         // Add a mouseover event to the cells
         cells.on("mouseover", function () {

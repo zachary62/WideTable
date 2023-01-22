@@ -62,7 +62,7 @@ export default class VizualizationController {
     }
 
     getData = async (relation, selection_conds = [], aggregate_exprs = null, groupby_conds = [],
-        orderby_conds = [], limit = 10000, custom_order_pref = []) => {
+        orderby_conds = [], limit = 100, custom_order_pref = []) => {
         let input = {
             relation: relation,
             selection_conds: selection_conds,
@@ -123,9 +123,10 @@ export default class VizualizationController {
         let orderby_conds = d["join_keys"];
         let data = await this.getData(tablename, undefined, undefined, undefined, orderby_conds)
 
+        // draw the new table
         let links = this.getEdges(d["id"])
         this.visView.clear()
-        this.visView.drawSingleTable(tablename, data["header"], data["data"], links, null, null, this.exploreHandler)
+        this.visView.drawSingleTable(tablename, data["header"], data["data"], links, undefined, undefined, this.exploreHandler)
     }
     
     edgeDragEnded = (d) => {
@@ -136,71 +137,82 @@ export default class VizualizationController {
         this.schemaView.highlightRelationSchema(d.target.id)
     }
 
-    // exploreHandler = async (d) => {
-    //     let data = d["d"]
-    //     let schema = d["schema"]
-    //     let tablename =  d["tablename"]
-    //     console.log(d, data, schema, tablename)
+    // This handler expand the tuple like a json, which fails for many-to-many
+    exploreNestedHandler = async (d, element) => {
+        let data = d["d"]
+        let schema = d["schema"]
+        let tablename =  d["tablename"]
 
-    //     let cur_join_keys = tablename === d.source.id ? d.left_keys[0]: d.left_keys[1]
-    //     let next_join_keys = tablename === d.source.id ? d.left_keys[1]: d.left_keys[0]
-    //     let next_tablename = tablename === d.source.id ? d.target.name: d.source.name
-    //     let cur_selection_conds = cur_join_keys.map(key => key + " = " + data[schema.indexOf(key)])
-    //     let next_selection_conds = next_join_keys.map((key, idx) => key + " = " + data[schema.indexOf(cur_join_keys[idx])])
+        console.log(element)
+        let cur_join_keys = tablename === d.source.id ? d.left_keys[0]: d.left_keys[1]
+        let next_join_keys = tablename === d.source.id ? d.left_keys[1]: d.left_keys[0]
+        let next_tablename = tablename === d.source.id ? d.target.name: d.source.name
+        let next_selection_conds = next_join_keys.map((key, idx) => key + " = " + `'${data[schema.indexOf(cur_join_keys[idx])]}'`)
 
-    //     this.visView.clear()
-    //     let visDiv = this.visView.addVisDiv()
+        // this.visView.clear()
+        // let visDiv = this.visView.addVisDiv()
 
-    //     let data1 = await this.getData(tablename, cur_selection_conds)
-    //     let data2 = await this.getData(next_tablename, next_selection_conds)
+        // let data1 = await this.getData(tablename, cur_selection_conds)
+        let data2 = await this.getData(next_tablename, next_selection_conds)
 
-    //     let links1 = this.getEdges(tablename)
-    //     let links2 = this.getEdges(next_tablename)
+        let links2 = this.getEdges(next_tablename)
+        
+        // this.visView.drawSingleTable(tablename, data1["header"], data1["data"], links1, null, visDiv, this.exploreHandler)
+        this.visView.drawSingleTable(next_tablename, data2["header"], data2["data"], links2, null, element, this.exploreHandler)
 
-    //     this.visView.drawSingleTable(tablename, data1["header"], data1["data"], links1, null, visDiv, this.exploreHandler)
-    //     this.visView.drawSingleTable(next_tablename, data2["header"], data2["data"], links2, null, visDiv, this.exploreHandler)
+    }
 
-    // }
-
+    // This handler expands the tuple by sorting the table by the join key.
+    // The variable "d" stores data, which is the tuple (a list of values) of the selected tuple.
+    // "d" also stores the schema, which is a list of attributes, the table name as a string, and the table index as a single integer.
     exploreHandler = async (d, element) => {
         let data = d["d"]
         let schema = d["schema"]
         let tablename = d["tablename"]
         let tableIdx = d["tableIdx"]
-
+        
+        // The join key is on two sides. 
+        // "cur_join_key" is from the current table
+        // "next_join_key" is from the table to be explored.
         let cur_join_keys = tablename === d.source.id ? d.left_keys[0] : d.left_keys[1]
         let next_join_keys = tablename === d.source.id ? d.left_keys[1] : d.left_keys[0]
         let next_tablename = tablename === d.source.id ? d.target.name : d.source.name
+
+        // create selection condition of join table
+        //  {col} = '{custom_order_pref[i]}' DESC, {col}
+        // order by key = value desc, key
         let selected_join_values = cur_join_keys.map(key => data[schema.indexOf(key)])
-        let cur_selection_conds = cur_join_keys.map(key => key + " = " + data[schema.indexOf(key)])
-
-
-
-        let leftTableData = await this.getData(tablename, [], undefined, [], cur_join_keys, undefined, selected_join_values)
+        let leftTableData = await this.getData(tablename, undefined, undefined, undefined, cur_join_keys, undefined, selected_join_values)
         let projection = {}
-        cur_join_keys.map(key => projection[key] = [key, 'IDENTITY'])
-        let joinTable = await this.getData(tablename, [], projection, [], cur_join_keys, undefined, selected_join_values)
 
+        // create a single of join key. This is to better connect two tables.
+        cur_join_keys.map(key => projection[key] = [key, 'IDENTITY'])
+        let joinTable = await this.getData(tablename, undefined, projection, undefined, cur_join_keys, undefined, selected_join_values)
+
+        // "links" stores the join relationship data.
         let links1 = this.getEdges(tablename)
         let links2 = this.getEdges(next_tablename)
 
-
-        let cellHeights = []
-        let leftcellHeights = []
-        let rightCellHeights = []
+        // this get, for the current table, what are the unique join key values 
         let cur_join_key_idxs = cur_join_keys.map(key => leftTableData["header"].indexOf(key))
         let cur_join_key_tuples = leftTableData["data"].map(row => cur_join_key_idxs.map(idx => row[idx]))
         let cur_join_key_set = new Set(cur_join_key_tuples.map(JSON.stringify))
+        
         // get right table data but filter for only join key values
         let next_selection_conds = Array.from(cur_join_key_set).map(JSON.parse).map(tuple => tuple.map((key, idx) => next_join_keys[idx] + " = " + `'${key}'`).join(" AND ")).join(" OR ")
         let rightTableData = await this.getData(next_tablename, [next_selection_conds], undefined, undefined, next_join_keys, undefined, selected_join_values)
-
-        let next_join_key_idxs = next_join_keys.map(key => rightTableData["header"].indexOf(key))
-
+        
         // calculates cell heights of left table rows, right table rows and join row cell height
+        let next_join_key_idxs = next_join_keys.map(key => rightTableData["header"].indexOf(key))
+        let cellHeights = []
+        let leftcellHeights = []
+        let rightCellHeights = []
         function calculateCellHeights() {
+            // for each value of the join key
             Array.from(cur_join_key_set).map(JSON.parse).forEach(key_tuple => {
+                // l_count is the number of tuples in current table with this join key value
                 let l_count = cur_join_key_tuples.filter(k => JSON.stringify(k) === JSON.stringify(key_tuple)).length
+                // r_count is the number of tuples in current table with this join key value
                 let r_count = rightTableData["data"].filter(row => JSON.stringify(next_join_key_idxs.map(idx => row[idx])) === JSON.stringify(key_tuple)).length
                 let max_count = Math.max(l_count, r_count)
                 cellHeights.push(max_count)
@@ -211,17 +223,16 @@ export default class VizualizationController {
 
         calculateCellHeights();
 
-
         // grey out all existing tables in visView
         this.visView.greyOutAllTables(tableIdx);
         // delete all tables after the current table (including the current table) so we can redraw them
         this.visView.deleteTablesAfter(tableIdx);
         // redraw left table
-        this.visView.drawSingleTable(tablename, leftTableData["header"], leftTableData["data"], links1, leftcellHeights, null, this.exploreHandler)
+        this.visView.drawSingleTable(tablename, leftTableData["header"], leftTableData["data"], links1, leftcellHeights, undefined, this.exploreHandler)
         // draw join table
-        this.visView.drawSingleTable("-", joinTable["header"], Array.from(cur_join_key_set).map(JSON.parse), [], cellHeights, null, this.exploreHandler)
+        this.visView.drawSingleTable("Join Keys", joinTable["header"], Array.from(cur_join_key_set).map(JSON.parse), [], cellHeights, undefined, this.exploreHandler)
         // draw right table
-        this.visView.drawSingleTable(next_tablename, rightTableData["header"], rightTableData["data"], links2, rightCellHeights, null, this.exploreHandler)
+        this.visView.drawSingleTable(next_tablename, rightTableData["header"], rightTableData["data"], links2, rightCellHeights, undefined, this.exploreHandler)
 
     }
 
