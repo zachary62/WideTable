@@ -1,7 +1,7 @@
 import json
+import math
 from datetime import datetime
 
-import simplejson
 from flask import Flask, render_template, jsonify, request
 
 import duckdb
@@ -104,6 +104,8 @@ def generate_synthea_dashboard():
     # dashboard.add_join('claims', 'providers', ['PROVIDERID'], ['Id']);
     # dashboard.add_join('payer_transitions', 'patients', ['PATIENT'], ['Id']);
     # dashboard.add_join('payer_transitions', 'payers', ['PAYER'], ['Id']);
+    dashboard.register_measurement(
+        "sum", 'patients', 'income', scope=ReplicateFact('patients', 'patients'))
     return dashboard
 
 dashboard = generate_synthea_dashboard()
@@ -158,18 +160,18 @@ def get_relation_sample():
     limit = data.get("limit", None)
 
     # Return the sample data
-    temp = dashboard.get_relation_sample(relation, selection_conds, groupby_conds, 
+    data = dashboard.get_relation_sample(relation, selection_conds, groupby_conds,
                                         orderby_conds, agg_exprs, limit, custom_order_pref)
+    replace_nans(data)
+    return jsonify(data)
 
-    # We need a better way to handle NaNs while converting to JSON
-    d = simplejson.dumps(temp, ignore_nan=True, default=datetime.isoformat)
-    response = app.response_class(
-        response=d,
-        status=200, mimetype='application/json')
-    return response
 
-    # return jsonify(
-    #     dashboard.get_relation_sample(relation, selection_conds, groupby_conds, orderby_conds, agg_exprs, limit))
+def replace_nans(data):
+    for i in range(len(data['data'])):
+        for j, elem in enumerate(data['data'][i]):
+            # nan, nattypes are not equal to each other in Python.
+            if elem != elem:
+                data['data'][i][j] = None
 
 
 '''
