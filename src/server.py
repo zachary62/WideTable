@@ -106,6 +106,9 @@ def generate_synthea_dashboard():
     # dashboard.add_join('payer_transitions', 'payers', ['PAYER'], ['Id']);
     dashboard.register_measurement(
         "sum", 'patients', 'income', scope=ReplicateFact('patients', 'patients'))
+
+    dashboard.register_measurement(
+        "sum", 'encounters', 'payer_coverage * total_claim_cost', scope=FullJoin())
     return dashboard
 
 dashboard = generate_synthea_dashboard()
@@ -120,11 +123,15 @@ def add_measurement():
     measurement = request.get_json()
     scope_input = measurement['scope']
     if scope_input == 'ReplicateFact':
-        scope = ReplicateFact(measurement['relation'], measurement['fact'])
+        scope = ReplicateFact(measurement['relation'], measurement['relation'])
     elif scope_input == 'FullJoin':
         scope = FullJoin()
     elif scope_input == 'Single':
         scope = SingleRelation(measurement['relation'])
+    elif scope_input == 'AverageAttribution':
+        scope = AverageAttribution(measurement['relation'])
+    else:
+        return jsonify({'error': 'Invalid scope'})
 
     try:
         dashboard.register_measurement(measurement['agg'].lower(), measurement['relation'].lower(), measurement['attr'].lower(),
@@ -145,6 +152,8 @@ def get_relation_sample():
 
     # Get the aggregate expressions from the data, if present
     agg_exprs = data.get("agg_exprs", None)
+    if agg_exprs is not None and len(agg_exprs) == 0:
+        agg_exprs = None
 
     print(agg_exprs)
 
@@ -189,7 +198,9 @@ nodes: [
         ],
         measurements: [ 
         {
-            name: AVG(A,..),
+            name: AVG(A..),
+            agg: AVG,
+            attr: A..,
             relations: [
             {name: t1, should_highlight: True/False, color: None},
             {name: t2, should_highlight: True/False, color: None}],

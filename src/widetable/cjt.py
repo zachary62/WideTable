@@ -237,7 +237,7 @@ class CJT(JoinGraph):
             print(
                 f'--Sending Message from {self.get_user_table(from_table)} to {self.get_user_table(to_table)} m_type is {m_type}')
 
-        # if undecided, it is speical message to invalidate the old messages
+        # if undecided, it is special message to invalidate the old messages
         if m_type == Message.UNDECIDED:
             self.delete_message(from_table, to_table)
             return

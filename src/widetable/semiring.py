@@ -57,6 +57,7 @@ class SumSemiRing(SemiRing):
     def __init__(self, user_table="", attr=""):
         self.user_table = user_table
         self.attr = attr
+        self.agg = "SUM"
 
     def lift_exp(self, s_after='s', user_table=""):
         if user_table == self.user_table:
@@ -78,7 +79,7 @@ class SumSemiRing(SemiRing):
         return self.user_table
     
     def __str__(self, relation=True):
-        return f'SUM({(self.user_table + ".") if relation else ""}{self.attr})'
+        return f'{self.agg}({(self.user_table + ".") if relation else ""}{self.attr})'
 
 
 class CountSemiRing(SemiField):
@@ -86,6 +87,7 @@ class CountSemiRing(SemiField):
     def __init__(self, user_table="", attr=""):
         self.user_table = user_table
         self.attr = attr
+        self.agg = "COUNT"
 
     def lift_exp(self, user_table="", c_after='c'):
         return {c_after: ('1', Aggregator.IDENTITY)}
@@ -114,6 +116,7 @@ class AvgSemiRing(SemiField):
     def __init__(self, user_table="", attr=""):
         self.user_table = user_table
         self.attr = attr
+        self.agg = "AVG"
         
     def lift_exp(self, s_after='s', c_after='c', user_table=""):
         if user_table == self.user_table:
