@@ -43,9 +43,9 @@ class DashBoardCJT(CJT):
 
         join_conds = [f"{weight}.{key} IS NOT DISTINCT FROM {relation}.{key}" for key in join_keys]
         new_relation = self.exe.execute_spja_query(normalized_weight,
-                                                    [relation, weight],
-                                                    select_conds=join_conds,
-                                                    mode=1)
+                                                   [relation, weight],
+                                                   select_conds=join_conds,
+                                                   mode=1)
         if relation != new_relation:
             self.replace(relation, new_relation)
 
@@ -127,16 +127,16 @@ class DashBoard(JoinGraph):
         sem_ring_str = measurement.__str__()
         scope = self.cjts[sem_ring_str].scope
         return scope.highlightRelation(relation)
-    
+
     def get_cjt(self, measurement):
         return self.cjts[measurement.__str__()]
-    
+
     def calibration(self, measurement):
         self.get_cjt(measurement).calibration()
-        
+
     def add_annotations(self, measurement, user_table: str, annotation):
         self.get_cjt(measurement).add_annotations(user_table, annotation)
-        
+
     def add_groupbys(self, measurement, user_table, attributes, lazy=True):
         self.get_cjt(measurement).add_groupbys(user_table, attributes, lazy)
 
@@ -196,43 +196,50 @@ class DashBoard(JoinGraph):
         for relation_left in self.joins:
             for relation_right in self.joins[relation_left]:
                 if (relation_right, relation_left) in seen: continue
-                links.append({"source": relation_left, 
+                links.append({"source": relation_left,
                               "target": relation_right,
-                              "left_keys": self.get_join_keys(relation_left, relation_right), 
+                              "left_keys": self.get_join_keys(relation_left, relation_right),
                               "right_keys": self.get_join_keys(relation_right, relation_left),
-                              "multiplicity": [self.get_multiplicity(relation_left, relation_right, simple=True), 
+                              "multiplicity": [self.get_multiplicity(relation_left, relation_right, simple=True),
                                                self.get_multiplicity(relation_right, relation_left, simple=True)],
-                              "missing":[self.get_missing_keys(relation_left, relation_right), 
-                                               self.get_missing_keys(relation_right, relation_left)],
-                             })
+                              "missing":[self.get_missing_keys(relation_left, relation_right),
+                                         self.get_missing_keys(relation_right, relation_left)],
+                              })
                 seen.add((relation_left, relation_right))
 
         for relation in self.get_relations():
             join_keys = set(self.get_join_keys(relation))
             attributes = set(self.get_relation_attributes(relation))
             measurements = []
-            
+
             if relation in self.measurement:
                 for semi_ring in self.measurement[relation]:
                     cjt = self.cjts[semi_ring.__str__()]
                     scope = cjt.scope
                     measurements.append({
                         'name': semi_ring.__str__(relation=False),
-                        'relations': [{
-                            'name': rel,
-                            'color': str(scope.highlightRelation(rel)[1]),
-                            'text': str(scope.highlightRelation(rel)[2]),} 
-                            for rel in self.get_relations() 
-                            if scope.highlightRelation(rel)[0]],
-                        'edges': [{
-                            'left_rel': edge['source'], 
-                            'right_rel': edge['target'],
-                            'color': str(scope.highlightEdge(edge['source'], edge['target'])[1]),
-                            'text': str(scope.highlightEdge(edge['source'], edge['target'])[2]),} 
-                            for edge in links 
-                            if scope.highlightEdge(edge['source'], edge['target'])[0]]
+                        'agg': semi_ring.agg,
+                        'attr': semi_ring.attr,
+                        'relations': [
+                            {
+                                'name': rel,
+                                'color': str(scope.highlightRelation(rel)[1]),
+                                'text': str(scope.highlightRelation(rel)[2]),
+                            }
+                            for rel in self.get_relations() if scope.highlightRelation(rel)[0]
+                        ],
+                        'edges': [
+                            {
+                                'left_rel': edge['source'],
+                                'right_rel': edge['target'],
+                                'color': str(scope.highlightEdge(edge['source'], edge['target'])[1]),
+                                'text': str(scope.highlightEdge(edge['source'], edge['target'])[2]),
+                            }
+                            for edge in links
+                            if scope.highlightEdge(edge['source'], edge['target'])[0]
+                        ]
                     })
-                    
+
             nodes.append({"id": relation,
                           "name": relation,
                           "measurements": measurements,
@@ -240,7 +247,7 @@ class DashBoard(JoinGraph):
                           "join_keys": list(join_keys),
                           })
         return nodes, links
-        
+
     def _repr_html_(self):
         nodes, links = self.get_graph()
         self.session_id += 1

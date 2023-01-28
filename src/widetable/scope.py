@@ -119,7 +119,7 @@ class AverageAttribution(Scope):
         
     def preprocess(self, joingraph):
         # check if there is a path from relation that causes duplication
-        def dfs(current_table, parent_table = None):
+        def dfs(current_table, parent_table=None):
             for c_neighbor in joingraph.joins[current_table]:
                 if c_neighbor != parent_table:
                     mul = joingraph.get_multiplicity(c_neighbor, current_table, simple=True) 

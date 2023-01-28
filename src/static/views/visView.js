@@ -157,9 +157,11 @@ export default class VisView {
                 let linksCopy = JSON.parse(JSON.stringify(Array.from(links)));
                 // each link store additional information about tuple, schema and table
                 // these are necessary for exploration
+                //TODO: can we possibly optimize this to avoid deep copy for every row?
                 let filtered = linksCopy.map(link => { link["d"] = d; link["schema"] = schema;
                     link["tableIdx"] = tableIdx;
-                    link["tablename"] = tablename; return link });
+                    link["tablename"] = tablename;
+                    return link });
                 // console.log(filtered);
                 return filtered;
             })

@@ -1,7 +1,7 @@
 import json
+import math
 from datetime import datetime
 
-import simplejson
 from flask import Flask, render_template, jsonify, request
 
 import duckdb
@@ -104,6 +104,11 @@ def generate_synthea_dashboard():
     # dashboard.add_join('claims', 'providers', ['PROVIDERID'], ['Id']);
     # dashboard.add_join('payer_transitions', 'patients', ['PATIENT'], ['Id']);
     # dashboard.add_join('payer_transitions', 'payers', ['PAYER'], ['Id']);
+    dashboard.register_measurement(
+        "sum", 'patients', 'income', scope=ReplicateFact('patients', 'patients'))
+
+    dashboard.register_measurement(
+        "sum", 'encounters', 'payer_coverage * total_claim_cost', scope=FullJoin())
     return dashboard
 
 dashboard = generate_synthea_dashboard()
@@ -118,11 +123,15 @@ def add_measurement():
     measurement = request.get_json()
     scope_input = measurement['scope']
     if scope_input == 'ReplicateFact':
-        scope = ReplicateFact(measurement['relation'], measurement['fact'])
+        scope = ReplicateFact(measurement['relation'], measurement['relation'])
     elif scope_input == 'FullJoin':
         scope = FullJoin()
     elif scope_input == 'Single':
         scope = SingleRelation(measurement['relation'])
+    elif scope_input == 'AverageAttribution':
+        scope = AverageAttribution(measurement['relation'])
+    else:
+        return jsonify({'error': 'Invalid scope'})
 
     try:
         dashboard.register_measurement(measurement['agg'].lower(), measurement['relation'].lower(), measurement['attr'].lower(),
@@ -143,6 +152,8 @@ def get_relation_sample():
 
     # Get the aggregate expressions from the data, if present
     agg_exprs = data.get("agg_exprs", None)
+    if agg_exprs is not None and len(agg_exprs) == 0:
+        agg_exprs = None
 
     print(agg_exprs)
 
@@ -158,18 +169,18 @@ def get_relation_sample():
     limit = data.get("limit", None)
 
     # Return the sample data
-    temp = dashboard.get_relation_sample(relation, selection_conds, groupby_conds, 
+    data = dashboard.get_relation_sample(relation, selection_conds, groupby_conds,
                                         orderby_conds, agg_exprs, limit, custom_order_pref)
+    replace_nans(data)
+    return jsonify(data)
 
-    # We need a better way to handle NaNs while converting to JSON
-    d = simplejson.dumps(temp, ignore_nan=True, default=datetime.isoformat)
-    response = app.response_class(
-        response=d,
-        status=200, mimetype='application/json')
-    return response
 
-    # return jsonify(
-    #     dashboard.get_relation_sample(relation, selection_conds, groupby_conds, orderby_conds, agg_exprs, limit))
+def replace_nans(data):
+    for i in range(len(data['data'])):
+        for j, elem in enumerate(data['data'][i]):
+            # nan, nattypes are not equal to each other in Python.
+            if elem != elem:
+                data['data'][i][j] = None
 
 
 '''
@@ -187,7 +198,9 @@ nodes: [
         ],
         measurements: [ 
         {
-            name: AVG(A,..),
+            name: AVG(A..),
+            agg: AVG,
+            attr: A..,
             relations: [
             {name: t1, should_highlight: True/False, color: None},
             {name: t2, should_highlight: True/False, color: None}],
