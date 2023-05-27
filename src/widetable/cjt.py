@@ -59,8 +59,20 @@ class CJT(JoinGraph):
         self.downward_message_passing(relation, Message.UNDECIDED)
         self.upward_message_passing(relation, Message.UNDECIDED)
 
-    def remove_annotations(self, relation: str, annotation, lazy=True):
-        pass
+    def remove_annotations(self, user_table: str, annotation, lazy=False):
+        relation = self.get_relation_from_user_table(user_table)
+
+        if "annotation" not in self.relation_info[relation]:
+            raise ValueError("No annotation to remove")
+            
+        else:
+            self.relation_info[relation]["annotation"].remove(annotation)
+            if len(self.relation_info[relation]["annotation"]) == 0:
+                del self.relation_info[relation]["annotation"]
+
+        if not lazy:
+            # invalidate messages from this relation
+            self.downward_message_passing(relation, Message.UNDECIDED)
 
     def add_groupbys(self, user_table, attributes, lazy=True):
         relation = self.get_relation_from_user_table(user_table)
@@ -71,8 +83,18 @@ class CJT(JoinGraph):
         # invalidate messages from this relation
         self.downward_message_passing(relation, Message.UNDECIDED)
 
-    def remove_groupbys(self, relation, attributes, lazy=True):
-        pass
+    def remove_groupbys(self, user_table, attributes, lazy=True):
+        relation = self.get_relation_from_user_table(user_table)
+        if "groupby" not in self.relation_info[relation]:
+            raise ValueError("No groupby to remove")
+        else:
+            self.relation_info[relation]["groupby"].remove(attributes)
+            if len(self.relation_info[relation]["groupby"]) == 0:
+                del self.relation_info[relation]["groupby"]
+
+        if not lazy:
+            # invalidate messages from this relation
+            self.downward_message_passing(relation, Message.UNDECIDED)
 
     def invalidate_message(self, from_table, to_table):
         message_name = self.get_message(from_table, to_table)
